@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A3; margin: 0; }
+  body { margin: 0; font-family: 'PingFang SC','Microsoft YaHei','Arial',sans-serif; }
+  .page { width: 3508px; height: 4961px; position: relative; overflow: hidden; page-break-after: always; }
+  .page.p1 { background: #2B2B2B; color: #fff; }
+  .page.p2,.page.p3,.page.p4,.page.p5,.page.p6,.page.p7,.page.p8 { background: #F7F5F0; color: #2B2B2B; }
+  .gold-line { position: absolute; top: 0; left: 0; width: 60px; height: 100%; background: #D4A853; }
+  .page-title { position: absolute; left: 160px; top: 120px; font-size: 100px; font-weight: bold; }
+  .page-subtitle { position: absolute; left: 160px; top: 260px; font-size: 40px; color: #888; }
+  .section { position: absolute; left: 160px; right: 120px; }
+  .card { background: #fff; border-radius: 20px; padding: 50px 60px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+  h2 { font-size: 60px; margin: 0 0 30px 0; }
+  h3 { font-size: 42px; margin: 0 0 15px 0; color: #D4A853; }
+  p, li { font-size: 34px; line-height: 1.8; color: #444; margin: 0 0 10px 0; }
+  ul { padding-left: 50px; margin: 0; }
+  .tag { display: inline-block; background: #2B2B2B; color: #fff; padding: 12px 30px; border-radius: 30px; font-size: 28px; margin: 8px; }
+  .accent { color: #5BC0BE; font-weight: bold; }
+  .gold { color: #D4A853; font-weight: bold; }
+  .big-number { font-size: 140px; font-weight: bold; color: #D4A853; }
+</style>
+</head>
+<body>
+
+<!-- Page 1: 封面 -->
+<div class="page p1">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+    <div style="font-size:120px;">🧪</div>
+    <h1 style="font-size:140px;margin:40px 0;font-weight:bold;">倒水游戏</h1>
+    <div style="font-size:60px;color:#D4A853;margin-bottom:60px;">Water Sort Puzzle</div>
+    <div style="font-size:40px;color:#999;">2026 湖南省大学生数字媒体创意设计大赛</div>
+    <div style="font-size:36px;color:#888;">B3 数字交互设计类 · HTML5 游戏</div>
+  </div>
+</div>
+
+<!-- Page 2: 游戏概述 -->
+<div class="page p2"><div class="gold-line"></div>
+  <div class="page-title">游戏概述</div>
+  <div class="section" style="top:400px;">
+    <p>倒水游戏是一款基于 <span class="accent">HTML5 Canvas</span> 的益智解谜游戏，玩家通过点击试管将彩色水倒入目标管中，目标是将所有<span class="gold">相同颜色的水</span>集中到同一根试管。</p>
+    <div style="display:flex;gap:60px;margin-top:80px;">
+      <div class="card" style="flex:1;text-align:center;"><div class="big-number">1400+</div><div style="font-size:32px;color:#888;">行纯 JavaScript</div></div>
+      <div class="card" style="flex:1;text-align:center;"><div class="big-number">5</div><div style="font-size:32px;color:#888;">种游戏模式</div></div>
+      <div class="card" style="flex:1;text-align:center;"><div class="big-number">84</div><div style="font-size:32px;color:#888;">经典关卡</div></div>
+      <div class="card" style="flex:1;text-align:center;"><div class="big-number">0</div><div style="font-size:32px;color:#888;">外部依赖</div></div>
+    </div>
+    <div style="margin-top:80px;">
+      <span class="tag">🖱 点击倒水</span><span class="tag">↩ 撤销系统</span><span class="tag">🎨 Canvas渲染</span>
+      <span class="tag">🎮 多模式</span><span class="tag">✋ 拖拽</span><span class="tag">🔧 关卡自制</span>
+    </div>
+  </div>
+</div>
+
+<!-- Page 3: 核心玩法 -->
+<div class="page p3"><div class="gold-line"></div>
+  <div class="page-title">核心玩法</div>
+  <div class="section" style="top:400px;">
+    <div style="display:flex;gap:80px;">
+      <div style="flex:1;">
+        <h3>操作流程</h3>
+        <ol style="font-size:34px;line-height:2.2;padding-left:50px;">
+          <li>点击试管 → <span class="accent">选中</span>（光晕 + 浮空）</li>
+          <li>点击另一根 → <span class="accent">倒水动画</span>启动</li>
+          <li>四阶段动画：移动 → 倾斜倒水 → 回正 → 归位</li>
+          <li>倒水特效：水流 + 液滴 + 飞溅 + 波纹</li>
+          <li>同色集齐 → <span class="gold">瓶盖</span>自动盖上</li>
+          <li>全部完成 → <span class="accent">通关!</span></li>
+        </ol>
+      </div>
+      <div style="flex:1;">
+        <h3>游戏规则</h3>
+        <ul>
+          <li>源管不能为空</li>
+          <li>目标管必须有空位</li>
+          <li>目标顶层颜色必须匹配（或为空）</li>
+          <li>每管默认 4 层（变容 4-7）</li>
+          <li>全部单色 = 通关</li>
+          <li>步数计数 + 撤销(Ctrl+Z)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Page 4: 特色功能 -->
+<div class="page p4"><div class="gold-line"></div>
+  <div class="page-title">特色功能</div>
+  <div class="section" style="top:400px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:50px;">
+      <div class="card"><h3>🎁 盲盒模式</h3><p>底部水层被彩虹流彩遮挡，上层倒空后逐层自动揭示，考验玩家记忆力。支持 1-2 层盲盒。</p></div>
+      <div class="card"><h3>🧪 变容模式</h3><p>打破固定 4 层容量，每管 2-8 层不等。颜色总数 = 目标管容量，装错即卡关。</p></div>
+      <div class="card"><h3>✋ 拖拽系统</h3><p>自由拖拽试管到任意位置，松开后自动弹到最近不重叠空地。</p></div>
+      <div class="card"><h3>🔧 关卡自制器</h3><p>可视化编辑 + 盲盒/变容参数调节 + DFS 可解性检测 + 本地存储。</p></div>
+      <div class="card"><h3>🏛 84 经典关卡</h3><p>6 档难度分组，从入门 (4 管) 到大师 (16 管)，十六进制编码高效存储。</p></div>
+      <div class="card"><h3>➕ 智能辅助</h3><p>卡关时随时加空管降难度；颜色悬停提示；瓶盖自动完成标记。</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Page 5: 视觉设计 -->
+<div class="page p5"><div class="gold-line"></div>
+  <div class="page-title">视觉设计</div>
+  <div class="section" style="top:400px;">
+    <div class="card" style="margin-bottom:40px;"><h3>🎨 设计语言</h3><p>简约清新风格，暖白底色 (#F7F5F0) + 16 色柔和马卡龙色板。直壁圆底玻璃试管，手绘高光与内壁反光。</p></div>
+    <div class="card" style="margin-bottom:40px;"><h3>🌊 动态水特效</h3><p>动画正弦波浪水面 + 内部涟漪振荡线 + 侧面折射反光椭圆。借鉴 Cocos 游戏引擎实现，纯 Canvas 绘制。</p></div>
+    <div class="card" style="margin-bottom:40px;"><h3>🎬 倒水动画系统</h3><p>四阶段 1.1 秒动画：移动至目标上方 → 倾斜倒水(手抖扰动) → 回正 → 归位。并行多动画支持。</p></div>
+    <div class="card"><h3>🌈 盲盒流彩效果</h3><p>HSL 全色相循环渐变，随时间波动流动，白色 "?" 标记清晰可辨。</p></div>
+  </div>
+</div>
+
+<!-- Page 6: 技术架构 -->
+<div class="page p6"><div class="gold-line"></div>
+  <div class="page-title">技术架构</div>
+  <div class="section" style="top:400px;">
+    <div style="display:flex;flex-direction:column;gap:40px;">
+      <div style="display:flex;gap:40px;align-items:stretch;">
+        <div style="background:#E8D5B0;width:260px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:bold;">渲染层</div>
+        <div class="card" style="flex:1;"><p>Canvas 2D · 自绘玻璃管 · 水特效 · 四阶段动画 · 拖拽交互 · 波浪水面</p></div>
+      </div>
+      <div style="display:flex;gap:40px;">
+        <div style="background:#C8DCC8;width:260px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:bold;">逻辑层</div>
+        <div class="card" style="flex:1;"><p>倒水验证 · 撤销栈 · 通关检测 · 瓶盖判定 · 盲盒逐层揭示 · 并行动画调度</p></div>
+      </div>
+      <div style="display:flex;gap:40px;">
+        <div style="background:#C8D0E8;width:260px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:bold;">数据层</div>
+        <div class="card" style="flex:1;"><p>反向构造关卡生成 · DFS 可解性检测 · localStorage 持久化 · 十六进制经典关卡编码</p></div>
+      </div>
+      <div style="display:flex;gap:40px;">
+        <div style="background:#E8D0D0;width:260px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:bold;">音效层</div>
+        <div class="card" style="flex:1;"><p>Web Audio API 合成倒水声 · 白噪声 + 带通滤波器 · 无外部音频依赖</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Page 7: 创新点 -->
+<div class="page p7"><div class="gold-line"></div>
+  <div class="page-title">创新点</div>
+  <div class="section" style="top:400px;">
+    <div style="display:flex;flex-direction:column;gap:50px;">
+      <div class="card"><h3>01 · 反向构造关卡生成</h3><p>从已解状态做随机合法倒水搅乱，天然保证有解，无需事后验证。1 空管极限模式同样适用，搜索效率远高于正向验证。</p></div>
+      <div class="card"><h3>02 · 盲盒记忆挑战</h3><p>底部水层彩虹流彩遮挡，上层倒空前不可见/不可操作，逐层揭示增加记忆难度和策略深度。</p></div>
+      <div class="card"><h3>03 · 变容模式</h3><p>打破固定 4 层容量，颜色总数 = 目标管容量，装错即卡关，深度策略性远超传统水排序。</p></div>
+      <div class="card"><h3>04 · 实时水物理特效</h3><p>动态波浪水面、内部涟漪、侧面反光，借鉴 Cocos 游戏引擎效果，纯 Canvas 2D 实现。</p></div>
+      <div class="card"><h3>05 · 自制关卡系统</h3><p>可视化编辑器 + 盲盒/变容参数 + DFS 可解性校验 + localStorage 持久化，玩家即创作者。</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Page 8: 总结 -->
+<div class="page p1" style="background:#2B2B2B;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#fff;">
+    <div style="font-size:100px;">✨</div>
+    <h1 style="font-size:100px;margin:40px 0;">谢谢观看</h1>
+    <div style="font-size:50px;color:#D4A853;margin-bottom:60px;">简约清新 · 益智挑战</div>
+    <div style="font-size:36px;color:#888;">倒水游戏 · Water Sort Puzzle</div>
+    <div style="font-size:30px;color:#666;margin-top:30px;">扫码立即体验 →</div>
+  </div>
+</div>
+</body>
+</html>
