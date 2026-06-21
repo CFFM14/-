@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>倒水游戏 · Water Sort</title>
+<style>
+  :root {
+    --bg:#f7f5f0; --surface:#fff; --text:#3b3b3b; --muted:#9a9a9a;
+    --border:#e2ded8; --gold:#d4a853; --danger:#c97b7b; --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--bg); display:flex; flex-direction:column; align-items:center;
+    justify-content:center; min-height:100vh;
+    font-family:'Inter','SF Pro','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; user-select:none; -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  }
+  #app{display:flex;flex-direction:column;align-items:center;gap:16px;padding:16px;width:100%;max-width:1100px;}
+
+  /* ── 屏幕切换 ── */
+  .screen{display:none;flex-direction:column;align-items:center;gap:16px;width:100%;}
+  .screen.active{display:flex;}
+
+  /* ── 主菜单 ── */
+  .logo{font-size:44px;margin-bottom:4px;}
+  .title{font-size:26px;font-weight:700;color:var(--text);letter-spacing:1px;}
+  .subtitle{font-size:14px;color:var(--muted);margin-bottom:8px;}
+  .menu-btn{
+    display:flex;align-items:center;gap:10px;width:260px;padding:14px 20px;
+    border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);
+    color:var(--text);font-size:16px;font-weight:550;cursor:pointer;
+    transition:all 0.18s;box-shadow:0 1px 3px rgba(0,0,0,0.03);text-align:left;
+  }
+  .menu-btn:hover{border-color:#c5bfb6;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .menu-btn:active{transform:scale(0.97);}
+  .menu-btn .icon{font-size:22px;width:28px;text-align:center;}
+
+  /* ── 子页面通用 ── */
+  .page-header{display:flex;align-items:center;gap:10px;width:100%;max-width:400px;}
+  .back-btn{
+    display:flex;align-items:center;gap:4px;padding:8px 16px;
+    border:1.5px solid var(--border);border-radius:22px;background:var(--surface);
+    color:var(--text);font-size:14px;cursor:pointer;transition:all 0.18s;
+  }
+  .back-btn:hover{border-color:#c5bfb6;}
+  .page-title{font-size:20px;font-weight:650;color:var(--text);}
+
+  /* ── 闯关模式 ── */
+  .diff-grid{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;}
+  .diff-btn{
+    display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
+    border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);
+    cursor:pointer;transition:all 0.18s;box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  }
+  .diff-btn:hover{border-color:var(--gold);}
+  .diff-btn .name{font-size:16px;font-weight:550;color:var(--text);}
+  .diff-btn .stars{font-size:14px;}
+  .diff-btn .hint{font-size:12px;color:var(--muted);}
+
+  /* ── 游戏画布区 ── */
+  canvas{display:block;border-radius:18px;background:var(--surface);cursor:pointer;max-width:100%;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);}
+  #play-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .badge{display:flex;align-items:center;gap:6px;background:var(--surface);color:var(--text);font-size:14px;font-weight:600;padding:8px 14px;border-radius:22px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+  .badge span{color:var(--gold);}
+  .btn{
+    display:inline-flex;align-items:center;gap:4px;padding:8px 16px;
+    border:1.5px solid var(--border);border-radius:22px;background:var(--surface);
+    color:var(--text);font-size:13.5px;font-weight:550;cursor:pointer;
+    transition:all 0.18s;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.03);
+  }
+  .btn:hover{border-color:#c5bfb6;}
+  .btn:active{transform:scale(0.96);}
+  .btn.primary{background:var(--text);color:#fff;border-color:var(--text);}
+  .btn.primary:hover{background:#555;}
+  .btn:disabled{opacity:0.35;pointer-events:none;}
+
+  /* ── 编辑器 ── */
+  #editor-area{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;}
+  #tube-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .edit-tube{display:flex;flex-direction:column;gap:1px;border:2px solid #d0ccc6;border-radius:0 0 12px 12px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;}
+  .edit-tube:hover{border-color:#b0aaa0;}
+  .edit-cell{width:40px;height:34px;transition:background 0.15s;}
+  .edit-tube .rim{height:8px;background:#e8e4dc;border-radius:6px 6px 0 0;}
+  .palette{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:360px;}
+  .palette .swatch{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all 0.15s;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
+  .palette .swatch.active{border-color:var(--text);transform:scale(1.15);}
+  .palette .swatch.erase{border:2px dashed #ccc;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:#999;}
+  .edit-controls{display:flex;align-items:center;gap:4px;margin-top:3px;justify-content:center;}
+  .e-btn{width:24px;height:20px;border:1px solid #d0ccc6;border-radius:10px;background:#faf8f5;cursor:pointer;font-size:13px;line-height:18px;text-align:center;color:#888;padding:0;transition:all 0.15s;}
+  .e-btn:hover{background:#e8e4dc;color:#555;}
+  .e-btn.blind{width:auto;padding:0 8px;font-size:11px;}
+  .e-btn.blind.active{background:#ffddd0;border-color:#e8b4a0;color:#c0392b;}
+  .e-cap{font-size:10px;color:#999;text-align:center;min-width:18px;}
+  #editor-name{width:220px;padding:8px 14px;border:1.5px solid var(--border);border-radius:22px;font-size:14px;text-align:center;outline:none;font-family:inherit;}
+  #editor-name:focus{border-color:var(--gold);}
+
+  /* ── 我的关卡 ── */
+  #levels-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:400px;}
+  .level-card{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.03);}
+  .level-card .info{flex:1;}
+  .level-card .lname{font-weight:600;font-size:14px;color:var(--text);}
+  .level-card .lmeta{font-size:12px;color:var(--muted);}
+  .level-card .actions{display:flex;gap:6px;}
+  .empty-state{color:var(--muted);text-align:center;padding:32px;font-size:15px;line-height:1.8;}
+
+  /* ── 游戏说明 ── */
+  .help-card{background:var(--surface);border-radius:var(--radius);padding:24px;max-width:420px;line-height:1.8;font-size:14px;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+  .help-card h3{font-size:17px;margin-bottom:8px;}
+  .help-card ul{padding-left:20px;}
+  .help-card .shortcut{display:inline-block;background:var(--bg);padding:1px 8px;border-radius:4px;font-size:13px;margin:0 2px;}
+
+  /* ── 胜利弹窗 ── */
+  #win-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100;justify-content:center;align-items:center;}
+  #win-overlay.show{display:flex;}
+  #win-card{background:var(--surface);border-radius:22px;padding:30px 36px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08),0 12px 40px rgba(0,0,0,0.10);animation:popIn 0.35s cubic-bezier(0.22,0.61,0.36,1);max-width:320px;}
+  @keyframes popIn{from{transform:scale(0.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  #win-card h1{font-size:22px;color:var(--text);margin-bottom:6px;}
+  #win-card .detail{font-size:14px;color:var(--muted);margin-bottom:16px;}
+
+  /* ── 颜色提示 ── */
+  #color-tip{position:fixed;pointer-events:none;z-index:150;padding:5px 10px;
+    background:rgba(60,60,60,0.88);color:#fff;font-size:12px;border-radius:6px;
+    white-space:nowrap;opacity:0;transition:opacity 0.15s;}
+  #color-tip.show{opacity:1;}
+
+  @media(max-width:500px){
+    #app{padding:8px;gap:12px;}
+    .btn{padding:7px 13px;font-size:12.5px;}
+    .menu-btn{width:220px;padding:12px 16px;font-size:14px;}
+    .logo{font-size:36px;}
+    .title{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 颜色提示浮层 ── -->
+<div id="color-tip"></div>
+
+<div id="app">
+
+  <!-- ═══════════ 主菜单 ═══════════ -->
+  <div class="screen active" id="screen-menu">
+    <div class="logo">🧪</div>
+    <div class="title">倒水游戏</div>
+    <div class="subtitle">简约清新的益智挑战</div>
+    <button class="menu-btn" data-screen="challenge"><span class="icon">🎯</span> 闯关模式</button>
+    <button class="menu-btn" data-screen="special"><span class="icon">🌟</span> 特殊关卡</button>
+    <button class="menu-btn" data-screen="editor"><span class="icon">🔧</span> 关卡自制器</button>
+    <button class="menu-btn" data-screen="mylevels"><span class="icon">📁</span> 我的关卡</button>
+    <button class="menu-btn" data-screen="help"><span class="icon">📖</span> 游戏说明</button>
+  </div>
+
+  <!-- ═══════════ 闯关模式 ═══════════ -->
+  <div class="screen" id="screen-challenge">
+    <div class="page-header">
+      <button class="back-btn" data-screen="menu">← 返回</button>
+      <span class="page-title">选择难度</span>
+    </div>
+    <div class="diff-grid" id="diff-grid"></div>
+  </div>
+
+  <!-- ═══════════ 特殊关卡 ═══════════ -->
+  <div class="screen" id="screen-special">
+    <div class="page-header">
+      <button class="back-btn" data-screen="menu">← 返回</button>
+      <span class="page-title">特殊关卡</span>
+    </div>
+    <div class="diff-grid" id="special-grid"></div>
+  </div>
+
+  <!-- ═══════════ 游戏画面 ═══════════ -->
+  <div class="screen" id="screen-play">
+    <div class="page-header">
+      <button class="back-btn" id="btn-back-play">← 返回</button>
+      <span class="page-title" id="play-label">闯关模式</span>
+    </div>
+    <canvas id="game"></canvas>
+    <div id="play-controls">
+      <div class="badge">步数 <span id="moves-num">0</span></div>
+      <button class="btn" id="btn-undo" disabled>↩ 撤销</button>
+      <button class="btn" id="btn-reset">↻ 重来</button>
+      <button class="btn" id="btn-add-tube-play">＋ 管子</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 关卡自制器 ═══════════ -->
+  <div class="screen" id="screen-editor">
+    <div class="page-header">
+      <button class="back-btn" data-screen="menu">← 返回</button>
+      <span class="page-title">关卡自制器</span>
+    </div>
+    <div id="editor-area">
+      <input id="editor-name" placeholder="输入关卡名称…" maxlength="20">
+      <div class="palette" id="palette"></div>
+      <div id="tube-grid"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btn-add-tube">＋ 加试管</button>
+        <button class="btn" id="btn-rm-tube">－ 减试管</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" id="btn-save-level">💾 保存关卡</button>
+        <button class="btn" id="btn-test-level">▶ 试玩</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 我的关卡 ═══════════ -->
+  <div class="screen" id="screen-mylevels">
+    <div class="page-header">
+      <button class="back-btn" data-screen="menu">← 返回</button>
+      <span class="page-title">我的关卡</span>
+    </div>
+    <div id="levels-list"></div>
+  </div>
+
+  <!-- ═══════════ 游戏说明 ═══════════ -->
+  <div class="screen" id="screen-help">
+    <div class="page-header">
+      <button class="back-btn" data-screen="menu">← 返回</button>
+      <span class="page-title">游戏说明</span>
+    </div>
+    <div class="help-card">
+      <h3>🎯 目标</h3>
+      <p>将所有<b>相同颜色</b>的水集中到同一根试管中即通关。</p>
+      <br>
+      <h3>🕹 操作</h3>
+      <ul>
+        <li><b>点击</b>试管 → 选中（出现光晕）</li>
+        <li>再次点击<b>同一根</b> → 取消选中</li>
+        <li>点击<b>另一根</b> → 将选中的水倒过去</li>
+      </ul>
+      <br>
+      <h3>📏 规则</h3>
+      <ul>
+        <li>只能倒在<b>空管</b>或<b>同色水</b>的上方</li>
+        <li>每根试管最多装 <b>4 层</b>水</li>
+        <li>每倒一次计 1 步（可撤销）</li>
+      </ul>
+      <br>
+      <h3>⌨ 快捷键</h3>
+      <p>
+        <span class="shortcut">Ctrl+Z</span> 撤销 &nbsp;
+        <span class="shortcut">R</span> 重来
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 胜利弹窗 ── -->
+<div id="win-overlay">
+  <div id="win-card">
+    <div style="font-size:36px;margin-bottom:4px;">✨</div>
+    <h1>恭喜通关！</h1>
+    <div class="detail" id="win-detail"></div>
+    <button class="btn primary" id="btn-win-ok">回到菜单</button>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  倒水游戏  —  多屏应用  ·  闯关 / 自制 / 收藏 / 说明         ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// ────────── 常量 ──────────
+const TW=56, RIM_H=10, GAP=20, BOTTOM_R=TW/2, WALL=4;
+const IW=TW-WALL*2, LAYER_H=36, INNER_R=BOTTOM_R-WALL, FB_DURATION=380;
+function straightH(cap){return cap*LAYER_H+6;} // cap=4→150, 5→186, 6→222, 7→258
+function totalH(cap){return RIM_H+straightH(cap)+BOTTOM_R;}
+
+const PALETTE=[
+  '#F4A7A0','#A8D8C8','#A0C4F4','#F4E4A0','#C8B8E8',
+  '#F4C8A0','#5BC0BE','#E8B8C8','#B8C8E0','#D8C8B0',
+  '#FF7B7B','#7BC67E','#8B7CB8','#6B8FA0','#D4956B','#6B6B6B',
+];
+
+// ── 经典关卡数据（16色索引，每串4位十六进制=1管，逗号分隔=1关） ──
+const CLASSIC_DATA=[
+  "1103,2221,0033,0321","3301,3022,1203,1201","4312,4300,2432,3010,4112","0412,3434,0014,0122,2133",
+  "2424,3250,5015,3040,3135,2141","4453,2020,2330,1551,2501,1434","2864,0224,1361,6044,6283,0811,8303",
+  "1653,3224,1426,1605,3015,4500,4623","4466,6320,5782,3732,8780,7440,0585,5326",
+  "0123,0123,0123,0123,4567,5674,6745,7456","2200,6384,7318,7541,3674,6568,0741,5835,0212",
+  "8224,2375,3700,2650,5765,1674,8141,3160,8384","3667,0747,4288,4586,7290,9950,4383,2216,1903,1155",
+  "5010,4791,9668,1390,3868,5142,7756,3495,0322,2487",
+  "4709,1162,aa27,3255,053a,8369,9486,3796,8a47,0521,4081",
+  "1430,1920,1788,5529,7a36,2a96,7550,4869,4017,43a3,68a2",
+  "3407,2825,a978,4613,0654,4051,7906,3895,aa79,a113,8262",
+  "6324,8897,3469,4a23,5771,1562,129a,8514,007a,5a09,8630",
+  "33a4,3896,6170,1522,6943,aa5a,1687,2080,0547,9725,8941",
+  "5107,4761,8186,9a53,4350,9278,1745,62a9,2a43,9068,320a",
+  "ba79,0621,0148,1522,7187,a332,883a,9653,4ab6,7064,b0b4,5599",
+  "0511,3b07,7140,1794,6862,82ab,5866,a352,7209,4a34,35b9,89ba",
+  "8213,6a47,7537,45a0,1a06,0b96,4190,56a4,b212,b788,3599,23b8",
+  "4188,63a3,7b60,0170,4497,537a,5091,a62b,5532,499a,1b8b,2682",
+  "3b52,7077,8295,3490,2318,a169,2aab,051b,46b3,5a06,8814,6947",
+  "3421,a367,6619,4a1a,6273,88b0,7814,9979,00b2,3b5a,8b02,5455",
+  "2440,0312,6833,59b6,9712,9706,b758,ba24,0cb8,1c65,45c8,c17a,3aa9",
+  "9c75,a536,9bb7,0824,22cc,639c,268a,4043,781a,31b9,5080,714a,b165",
+  "2975,95a2,1538,a060,cbc0,b874,4549,61c7,349b,a802,17b3,3a16,862c",
+  "8321,b3d9,ab42,6751,1000,cdd8,1bc5,5456,3d96,a40a,4b82,6c72,93ca,9877",
+  "c6a8,d520,421a,d867,3036,2d83,9a69,cbb9,47b5,57cc,1511,0ab8,7d20,3944",
+  "86da,5b61,5263,28d3,9570,ccb9,0437,8414,705b,1acb,12dc,792a,9d03,8a64",
+  "c249,da02,5904,7328,19c8,6dd5,a26b,8765,4933,adc7,113c,74b1,608b,ab50",
+  "51bb,30c6,49c7,3213,91c7,a750,bd2c,3686,a8a7,0910,bd85,2d94,4564,8da2",
+  "11a7,eea9,d223,8c8d,55d4,7304,580c,0679,698c,3b49,a45b,76c0,e1b1,6ad2,be32",
+  "c652,72c3,4e38,551a,b9ab,6e1e,c00a,7a44,8932,b8d6,30d9,b927,45ce,11d0,768d",
+  "d141,8a54,953e,aa56,8967,3d4c,8da1,9bc7,03e8,ecb0,5272,be39,4261,db60,702c",
+  "687c,c462,3535,0496,0232,5bad,e7ae,1e4b,a4d1,eb80,8b23,195c,c7da,d609,8917",
+  "cb19,029d,1746,246b,525b,83ea,aa03,e55d,38b9,27a4,3681,4e07,0dcc,91dc,87e6",
+  "b434,9d33,a5cb,1879,560b,86c3,7a1d,b8ca,921d,7105,ede7,0ec6,6294,e48a,2205",
+  "1ad8,5060,748a,3893,d075,b774,3016,acbe,2ea9,e158,9524,bc4e,6c9b,63d2,2c1d",
+  "6c67,27c3,9086,b951,d0e5,8894,1c93,05c2,7ad2,e241,3b71,4bdd,0a3b,6aee,48a5",
+  "6910,1412,de54,aa31,6b0d,587a,9c87,68d2,60c4,7b95,523a,ee32,8ce3,07dc,bb94",
+  "1c8a,8302,c4b9,6635,7ecb,7e21,8a1a,deda,5d00,b697,b945,e34d,2518,0436,c927",
+  "4e35,31ea,14cb,1da4,8925,8283,bdac,626d,5795,e090,6b07,a60b,1747,cc39,de28",
+  "4a34,9c88,d0eb,945e,232e,a79b,2752,6c58,4d50,d1b0,6cdc,7e38,76a6,3b01,a119",
+  "e3a6,8331,50b0,40b3,e2e2,961a,4897,575c,e44d,c82b,5d77,9da0,c86d,b921,16ca",
+  "d195,3646,a2cb,7e41,0c2c,55ab,857d,02e4,379d,60d3,19ea,8819,b437,8eca,620b",
+  "18ea,3632,1388,2b06,5d24,e6ac,96ab,3ac5,4d25,7481,904e,0059,97d7,ceb7,1dbc",
+  "2c4d,1085,968e,3c56,e9c1,86b3,7774,da36,ba7c,80ea,2290,d539,0da2,14b5,1b4e",
+  "07b9,5281,be3d,2213,62a6,6a11,93e0,557a,46dc,b3ce,ce40,a879,8b05,dc49,d847",
+  "b101,689b,09ec,6c2a,e584,4978,4ad7,23b7,8d6a,5036,bc07,5a31,124d,92ce,d53e",
+  "119a,3bc7,5d29,d320,2c67,1a9a,b75b,e0a5,038c,80bc,e698,8621,354d,4d46,e74e",
+  "e2e9,c987,7b54,3b56,dc28,3d91,0576,e6c6,014a,2430,d2e8,7b04,3bd1,8aa1,c95a",
+  "3ca2,b830,6e0c,4550,5591,4d76,7d17,e8a9,7c4b,26ee,01ab,d462,3d3a,18c9,b982",
+  "53b1,60c5,e144,937b,4c18,cd8c,2707,3d64,b9ad,1e03,d769,25b2,05a2,a96a,88ee",
+  "a792,bcd6,cc30,bab1,1447,4086,e534,aed9,1536,10ea,7e80,2c95,d2b2,5838,d796",
+  "171b,16ec,7594,d5a3,6ace,9224,3eb3,8926,0a50,52be,d840,cd8a,dc03,b417,9687",
+  "4063,42d5,3994,67e8,ed3e,8c9a,5e1b,3dc9,16a0,ac5b,4287,6527,bd17,a2cb,1080",
+  "a100,e268,6918,d479,87be,cc5c,7bb9,31d0,0e35,ad35,24e5,14c3,a7bd,622a,4869",
+  "51d7,c286,ab1b,4dc4,696c,3520,e870,d60e,a933,1ae0,791e,49bb,5dc7,2848,a523",
+  "e896,624c,3a20,751a,d4da,1e5c,c007,e323,b7db,8885,d63b,4511,490e,2c69,9b7a",
+  "1816,e639,dd0c,2552,d649,403b,1c72,4d87,a709,5956,cba8,ceb3,417b,8aea,e230",
+  "ae87,b112,3412,a699,2756,b3b2,6054,9ced,dcc0,9d37,74eb,5aa0,03e8,5c1d,6848",
+  "218b,be37,4952,9a37,3b57,4c66,c61d,0e00,4a8b,29ac,215e,d901,d5a3,467e,c88d",
+  "296a,045c,5429,8761,6a90,b70e,68da,ec23,a278,01ed,4534,71eb,b381,9dd5,bc3c",
+  "2172,70f6,f26e,abdc,5904,2988,9d1e,0503,51e8,3414,bec6,fbcd,faba,7363,ca89,547d",
+  "0bac,1c83,7487,852a,4231,23cc,9620,afe7,65ed,1d6b,991d,fb63,a4d0,f8fe,b549,5e70",
+  "e5dd,1be1,cda2,923e,73ac,e741,8a09,d78a,6fc9,1480,2703,b460,2854,f5f6,c9f5,b3b6",
+  "0721,8493,6b5b,1fc6,0765,515a,e7fa,384c,64e8,b72a,d4fb,0138,d32a,fd99,c20e,9ced",
+  "0d67,6102,5613,b27a,4742,41db,12e9,9ed5,9a78,e3cf,bfb6,9e8d,080a,3453,fafc,c85c",
+  "351a,bac2,e616,83fc,f077,8996,7a7e,9c1a,563f,b2d0,531e,b84c,54bd,02d9,8e42,04df",
+  "d7f8,75e2,6bca,fd79,16ac,a0b4,8094,a153,972d,bcfe,2e1c,4631,6b00,5d84,e285,33f9",
+  "a11b,76a0,e089,e607,9dfc,d944,4c86,a8c3,45e1,26ad,b25b,f335,7cfd,3b25,e8f1,7092",
+  "7f5a,812f,7273,c81b,3eb0,ced5,3569,13ac,e7da,09d8,f5de,49ba,cb12,66f0,2446,4809",
+  "9c57,34ed,5c83,3f68,01f4,b24b,9761,40dc,e6a2,5308,7a59,ec9b,1a6e,ff2d,28d1,ba70",
+  "65d1,ad56,8c3a,7014,6f45,ab29,8987,992c,031e,34d1,07ef,f6a8,7ce2,fb23,bdeb,c054",
+  "341d,4cf9,f251,d50e,7b5a,e928,4f16,fba6,d7c6,7079,e16a,c49b,d88e,2c23,5a80,3b30",
+  "a04b,765e,629c,067e,bff8,5856,71ad,84aa,302c,fd8c,2d4b,e93d,5930,72ef,911b,34c1",
+  "3513,92a1,a6c4,a9b8,47fe,3b12,2048,60e7,1eef,458b,2f9d,70d5,fa6d,56c8,b70d,cc93",
+  "53e4,5616,d588,9e91,fa10,d026,3fb7,bea9,0ec2,68d5,f9c0,a833,d44c,24a7,f27b,cb17",
+  "d8c7,a10b,786f,2512,567d,f8a2,ccde,df3c,ef03,5b0e,6943,9a63,149b,4850,a427,19eb",
+  "08a3,720c,29c0,2e77,59fb,14eb,8430,41dd,f8aa,6ab9,fce6,155d,9851,62fd,c7e6,433b",
+  "c6c9,ad37,c203,4131,e7bd,60f6,8f0b,0587,a4eb,e2e7,8982,6adb,f251,df95,45a3,c194",
+];
+
+function parseClassic(dataStr){
+  const list=dataStr.split(',').map(ts=>{
+    const w=[];for(let i=0;i<4;i++)w.push(PALETTE[parseInt(ts[i],16)]||'transparent');return w;
+  });
+  for(let e=0;e<2;e++)list.push(new Array(4).fill('transparent'));
+  return list;
+}
+
+const LS_KEY='watersort_custom_levels';
+
+// ────────── DOM ──────────
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const elMoves=document.getElementById('moves-num');
+const elUndo=document.getElementById('btn-undo');
+const elOverlay=document.getElementById('win-overlay');
+const elDetail=document.getElementById('win-detail');
+
+// ────────── 屏幕导航 ──────────
+let currentScreen='menu';
+let playMode='challenge'; // 'challenge' | 'custom' | 'classic' | 'blindbox' | 'varicap'
+let playLevelId=null;
+let tubeCaps=[];       // 每管容量（默认4，变容模式4~7）
+let hiddenMask=[];     // 盲盒模式：hiddenMask[i]=该管当前被隐藏的层数(0~2)
+let hiddenMaskInit=[]; // 盲盒初始状态（重来时恢复）
+let tubesInit=[];      // 初始试管数据（重来时恢复）
+let capsInit=[];       // 初始容量数据（重来时恢复）
+let revealAnim=null;   // 揭示动画 { tube, startTime, prevHidden }
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('screen-'+name);
+  if(el) el.classList.add('active');
+  currentScreen=name;
+  if(name==='mylevels') renderLevelsList();
+  if(name==='challenge') renderChallenge();
+  if(name==='special') renderSpecial();
+}
+
+// 菜单按钮
+document.querySelectorAll('.menu-btn').forEach(b=>{
+  b.addEventListener('click',()=>showScreen(b.dataset.screen));
+});
+// 返回按钮
+document.querySelectorAll('.back-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(currentScreen==='play'&&transferAnims.length>0) return;
+    if(currentScreen==='play') exitPlay();
+    showScreen(b.dataset.screen);
+  });
+});
+
+// ═══════════════════════════════════════════════
+//  闯关模式
+// ═══════════════════════════════════════════════
+
+// ── 统一关卡生成器（反向构造，保证有解，难度决定空管数） ──
+const DIFFS=[
+  {n:5,empty:2,shuffle:60,label:'⭐ 简单',hint:'5色·2空管'},
+  {n:6,empty:2,shuffle:80,label:'⭐⭐ 中等',hint:'6色·2空管'},
+  {n:6,empty:1,shuffle:100,label:'⭐⭐⭐ 困难',hint:'6色·仅1空管'},
+  {n:7,empty:1,shuffle:120,label:'🌟🌟 专家',hint:'7色·仅1空管'},
+  {n:8,empty:1,shuffle:150,label:'💀 地狱',hint:'8色·仅1空管'},
+];
+
+function genLevelSmart(numColors, emptyTubes, shuffleMoves, depth=0){
+  if(depth>50)return fallbackGen(numColors, emptyTubes);
+  const colors=shuffle([...PALETTE]).slice(0,numColors);
+  const list=[];
+  for(let ci=0;ci<numColors;ci++){
+    const w=[];for(let i=0;i<4;i++)w.push(colors[ci]);list.push(w);
+  }
+  for(let e=0;e<emptyTubes;e++)list.push(new Array(4).fill('transparent'));
+  let eff=0;
+  const maxTries=shuffleMoves*20; // 充足尝试
+  for(let k=0;k<maxTries&&eff<shuffleMoves;k++){
+    let from,to;
+    do{from=Math.floor(Math.random()*list.length);to=Math.floor(Math.random()*list.length);}while(from===to);
+    const src=list[from],dst=list[to];
+    const sc=topClr(src);if(sc==='transparent')continue;
+    const dc=topClr(dst);if(dc!=='transparent'&&dc!==sc)continue;
+    const run=topRun(src),sp=space(dst),cnt=Math.min(run,sp);
+    if(cnt<=0)continue;
+    let rm=0;for(let i=src.length-1;i>=0&&rm<cnt;i--)if(src[i]===sc){src[i]='transparent';rm++;}
+    let ad=0;for(let i=0;i<dst.length&&ad<cnt;i++)if(dst[i]==='transparent'){dst[i]=sc;ad++;}
+    eff++;
+  }
+  if(eff<3||list.every(pure))return genLevelSmart(numColors,emptyTubes,shuffleMoves,depth+1);
+  return list.map(w=>[...w]);
+}
+
+// 后备方案：随机洗牌分配（旧方式，速度快但不定有解）
+function fallbackGen(numColors, emptyTubes){
+  const colors=shuffle([...PALETTE]).slice(0,numColors);
+  let all=[];for(const c of colors)for(let i=0;i<4;i++)all.push(c);
+  all=shuffle(all);
+  const list=[];
+  for(let t=0;t<numColors;t++){const w=[];for(let i=0;i<4;i++)w.push(all[t*4+i]);list.push(w);}
+  for(let e=0;e<emptyTubes;e++)list.push(new Array(4).fill('transparent'));
+  return list;
+}
+
+// 经典关卡按管数分组
+const CLASSIC_GROUPS=[
+  {label:'🌿 入门',hint:'4~5 管',range:[0,8]},
+  {label:'🍃 初级',hint:'6~7 管',range:[8,16]},
+  {label:'🌳 中级',hint:'8~9 管',range:[16,28]},
+  {label:'🏔 高级',hint:'10~11 管',range:[28,40]},
+  {label:'🔥 专家',hint:'12~13 管',range:[40,56]},
+  {label:'💀 大师',hint:'14~16 管',range:[56,84]},
+];
+
+function renderChallenge(){
+  const grid=document.getElementById('diff-grid');
+  let html='<div style="font-size:14px;color:var(--muted);margin:0 0 2px;">随机生成（反向构造·保证有解）</div>';
+  html+=DIFFS.map(d=>`
+    <button class="diff-btn" data-gen="${d.n}" data-empty="${d.empty}" data-shuffle="${d.shuffle}">
+      <span class="name">${d.label}</span><span class="hint">${d.hint}</span>
+    </button>`).join('');
+  html+='<div style="font-size:14px;color:var(--muted);margin:8px 0 2px;">经典关卡（84关）</div>';
+  html+=CLASSIC_GROUPS.map((g,i)=>`
+    <button class="diff-btn" data-classic="${i}">
+      <span class="name">${g.label}</span><span class="hint">${g.hint} · ${g.range[0]+1}–${g.range[1]}关</span>
+    </button>`).join('');
+  grid.innerHTML=html;
+  grid.querySelectorAll('[data-gen]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const n=parseInt(b.dataset.gen),empty=parseInt(b.dataset.empty),shuffle=parseInt(b.dataset.shuffle);
+      playMode='challenge';playLevelId=null;
+      document.getElementById('play-label').textContent='闯关 · '+n+'色'+(empty===1?' · 1空管':'');
+      showScreen('play');
+      setTimeout(()=>{
+        try{const data=genLevelSmart(n,empty,shuffle);resetFromData(data);}catch(e){console.error(e);}
+      },50);
+    });
+  });
+  grid.querySelectorAll('[data-classic]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const g=CLASSIC_GROUPS[parseInt(b.dataset.classic)];
+      const idx=g.range[0]+Math.floor(Math.random()*(g.range[1]-g.range[0]));
+      playMode='classic';playLevelId=idx;
+      document.getElementById('play-label').textContent='经典 #'+(idx+1);
+      showScreen('play');
+      setTimeout(()=>{
+        try{const data=parseClassic(CLASSIC_DATA[idx]);resetFromData(data);}catch(e){console.error(e);}
+      },50);
+    });
+  });
+}
+function startClassic(idx){
+  playMode='classic';playLevelId=idx;
+  const data=parseClassic(CLASSIC_DATA[idx]);
+  document.getElementById('play-label').textContent='经典 #'+(idx+1)+' ('+data.length+'管)';
+  showScreen('play');resetFromData(data);
+}
+
+// ── 变容模式 ──
+const VARICAP_DIFFS=[
+  {n:3, label:'🌱 入门', hint:'3色·容量4~5·共5管'},
+  {n:4, label:'🌿 初级', hint:'4色·容量4~6·共6管'},
+  {n:5, label:'🌳 中级', hint:'5色·容量4~6·共7管'},
+  {n:6, label:'🏔 高级', hint:'6色·容量4~7·共8管'},
+];
+
+function genVaricapLevel(numColors){
+  const colors=shuffle([...PALETTE]).slice(0,numColors);
+  const caps=[4,5,6,7,4,5,6,7,4,5]; // 每种颜色分配的容量
+  // 把所有水层打到一个数组里彻底洗牌
+  let allLayers=[];
+  for(let ci=0;ci<numColors;ci++)for(let i=0;i<caps[ci];i++)allLayers.push(colors[ci]);
+  allLayers=shuffle(allLayers);
+  // 按容量分配到管
+  const list=[];
+  let idx=0;
+  for(let ci=0;ci<numColors;ci++){
+    const cap=caps[ci];
+    const w=[];for(let i=0;i<cap;i++)w.push(allLayers[idx++]);
+    list.push(w);
+  }
+  // 补2个空管
+  list.push(new Array(4).fill('transparent'));
+  list.push(new Array(4).fill('transparent'));
+  // 若侥幸全纯色则重试
+  if(list.every(pure))return genVaricapLevel(numColors);
+  return {tubes:list, caps:list.map(w=>w.length)};
+}
+
+function startVaricap(n){
+  const{tubes:data,caps}=genVaricapLevel(n);
+  playMode='varicap';
+  document.getElementById('play-label').textContent='变容 · '+n+'色';
+  showScreen('play');
+  resetFromData(data,null,caps);
+}
+
+// ── 特殊关卡（盲盒 + 变容） ──
+const BLINDBOX_DIFFS=[
+  {n:5, label:'🎁 简单', hint:'5色·1~2管盲盒·遮1层', maxHidden:1, tubeRatio:0.25},
+  {n:6, label:'🎁 中等', hint:'6色·2~3管盲盒·遮1~2层', maxHidden:2, tubeRatio:0.35},
+  {n:7, label:'🎁 困难', hint:'7色·3~5管盲盒·遮1~2层', maxHidden:2, tubeRatio:0.50},
+  {n:8, label:'🎁 专家', hint:'8色·4~6管盲盒·遮1~2层', maxHidden:2, tubeRatio:0.60},
+];
+
+function genBlindbox(n, maxHidden, tubeRatio){
+  let data=genLevelSmart(n,2,50+n*10);
+  const numToHide=Math.max(1, Math.floor(data.length*tubeRatio));
+  const candidates=data.map((t,i)=>({i, filled:filled(t)})).filter(x=>x.filled>=2);
+  const shuffled=shuffle([...candidates]);
+  const mask=new Array(data.length).fill(0);
+  let hidden=0;
+  for(const c of shuffled){
+    if(hidden>=numToHide)break;
+    const maxH=Math.min(maxHidden, c.filled-1);
+    if(maxH<1)continue;
+    const h=1+Math.floor(Math.random()*maxH);
+    mask[c.i]=h;hidden++;
+  }
+  return {data, mask};
+}
+
+function renderSpecial(){
+  const grid=document.getElementById('special-grid');
+  let html='<div style="font-size:14px;color:var(--muted);margin:0 0 2px;">🎁 盲盒模式</div>';
+  html+=BLINDBOX_DIFFS.map((d,i)=>`
+    <button class="diff-btn" data-bb="${i}">
+      <span class="name">${d.label}</span><span class="hint">${d.hint}</span>
+    </button>`).join('');
+  html+='<div style="font-size:14px;color:var(--muted);margin:8px 0 2px;">🧪 变容模式</div>';
+  html+=VARICAP_DIFFS.map((d,i)=>`
+    <button class="diff-btn" data-vc="${i}">
+      <span class="name">${d.label}</span><span class="hint">${d.hint}</span>
+    </button>`).join('');
+  grid.innerHTML=html;
+  grid.querySelectorAll('[data-bb]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const d=BLINDBOX_DIFFS[parseInt(b.dataset.bb)];
+      const{data,mask}=genBlindbox(d.n,d.maxHidden,d.tubeRatio);
+      playMode='blindbox';
+      document.getElementById('play-label').textContent='盲盒 · '+d.n+'色';
+      showScreen('play');resetFromData(data,mask);
+    });
+  });
+  grid.querySelectorAll('[data-vc]').forEach(b=>{
+    b.addEventListener('click',()=>startVaricap(VARICAP_DIFFS[parseInt(b.dataset.vc)].n));
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  关卡自制器
+// ═══════════════════════════════════════════════
+
+let editTubes=[];       // 编辑器中的试管数组
+let editCaps=[];         // 每管容量
+let editHidden=[];       // 每管盲盒层数(0~2)
+let editActiveColor=0;   // 当前选中的色板索引
+let editBlindMode=false; // 盲盒编辑模式
+
+function initEditor(){
+  const c1=PALETTE[0], c2=PALETTE[1];
+  editTubes=[
+    [c1,c1,c1,c1],
+    [c2,c2,c2,c2],
+    ['transparent','transparent','transparent','transparent'],
+  ];
+  editCaps=[4,4,4];
+  editHidden=[0,0,0];
+  editActiveColor=0;
+  editBlindMode=false;
+  document.getElementById('editor-name').value='';
+  renderEditor();
+}
+
+function changeCap(ti,delta){
+  const newCap=editCaps[ti]+delta;
+  if(newCap<2||newCap>8)return;
+  const old=editTubes[ti];
+  const nw=new Array(newCap).fill('transparent');
+  for(let i=0;i<Math.min(old.length,newCap);i++)nw[i]=old[i];
+  editTubes[ti]=nw;editCaps[ti]=newCap;
+  if(editHidden[ti]>=newCap)editHidden[ti]=Math.max(0,newCap-1);
+  renderEditor();
+}
+function toggleBlind(ti){
+  if(!editBlindMode){editBlindMode=true;renderEditor();return;}
+  editHidden[ti]=(editHidden[ti]+1)%(Math.min(3,editCaps[ti]));
+  if(editHidden[ti]>=editCaps[ti])editHidden[ti]=0;
+  renderEditor();
+}
+
+function renderEditor(){
+  // 色板
+  const pal=document.getElementById('palette');
+  let html=PALETTE.map((c,i)=>`
+    <div class="swatch${i===editActiveColor?' active':''}" style="background:${c}" data-color="${i}"></div>
+  `).join('');
+  html+=`<div class="swatch erase${editActiveColor===-1?' active':''}" data-color="-1">✕</div>`;
+  pal.innerHTML=html;
+  pal.querySelectorAll('.swatch').forEach(s=>{
+    s.addEventListener('click',()=>{
+      editActiveColor=parseInt(s.dataset.color);
+      renderEditor();
+    });
+  });
+
+  // 试管网格
+  const grid=document.getElementById('tube-grid');
+  grid.innerHTML=editTubes.map((tube,ti)=>{
+    const rev=[...tube].reverse();
+    const hid=editHidden[ti]||0;
+    const cap=editCaps[ti]||4;
+    return `<div class="edit-tube" data-tube="${ti}" style="position:relative">
+      <div style="font-size:10px;text-align:center;color:#888;">${cap}格</div>
+      <div class="rim"></div>
+      ${rev.map((c,i)=>{const li=tube.length-1-i;const isHid=li<hid;return `<div class="edit-cell" data-tube="${ti}" data-layer="${li}" style="background:${isHid?'#6b6b6b':(c==='transparent'?'#f5f3f0':c)};${isHid?'color:#fff;font-size:12px;text-align:center;line-height:34px;':''}">${isHid?'?':''}</div>`;}).join('')}
+      <div class="edit-controls">
+        <button class="e-btn" data-capti="${ti}" data-capd="-1">−</button>
+        <span class="e-cap">${cap}格</span>
+        <button class="e-btn" data-capti="${ti}" data-capd="1">＋</button>
+        <button class="e-btn blind${editBlindMode?' active':''}" data-blindti="${ti}">${hid>0?'🙈'+hid:'🙈'}</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.edit-cell').forEach(cell=>{
+    cell.addEventListener('click',()=>{
+      const ti=parseInt(cell.dataset.tube);
+      const li=parseInt(cell.dataset.layer);
+      const color=editActiveColor===-1?'transparent':PALETTE[editActiveColor];
+      editTubes[ti][li]=color;
+      renderEditor();
+    });
+  });
+  grid.querySelectorAll('[data-capti]').forEach(b=>{
+    b.addEventListener('click',e=>{e.stopPropagation();changeCap(parseInt(b.dataset.capti),parseInt(b.dataset.capd));});
+  });
+  grid.querySelectorAll('[data-blindti]').forEach(b=>{
+    b.addEventListener('click',e=>{e.stopPropagation();toggleBlind(parseInt(b.dataset.blindti));});
+  });
+}
+
+function addEditTube(){
+  if(editTubes.length>=12) return;
+  editTubes.push(new Array(4).fill('transparent'));
+  editCaps.push(4);
+  editHidden.push(0);
+  renderEditor();
+}
+function rmEditTube(){
+  if(editTubes.length<=2) return;
+  editTubes.pop();editCaps.pop();editHidden.pop();
+  renderEditor();
+}
+
+// ── 可解性检测（DFS + 状态哈希） ──
+function checkSolvable(tubes,maxDepth=600){
+  const _topIdx=w=>{for(let i=w.length-1;i>=0;i--)if(w[i]!=='transparent')return i;return-1;};
+  const _topClr=w=>{const i=_topIdx(w);return i===-1?'transparent':w[i];};
+  const _topRun=w=>{const i=_topIdx(w);if(i===-1)return 0;const c=w[i];let n=0;for(let j=i;j>=0&&w[j]===c;j--)n++;return n;};
+  const _space=w=>{let n=0;for(let i=w.length-1;i>=0&&w[i]==='transparent';i--)n++;return n;};
+  const _pure=w=>{const f=w[0];for(let i=1;i<w.length;i++)if(w[i]!==f)return false;return true;};
+
+  const visited=new Set();
+  function key(state){
+    const norm=state.map(t=>t.join(','));
+    const empty=[],pure=[],rest=[];
+    for(const t of norm){
+      const layers=t.split(',');
+      if(layers.every(c=>c==='transparent'))empty.push(t);
+      else if(layers.every(c=>c===layers[0]))pure.push(t);
+      else rest.push(t);
+    }
+    return [...rest.sort(),...pure.sort(),...empty.sort()].join('|');
+  }
+  function dfs(state,depth){
+    if(depth>maxDepth)return false;
+    if(state.every(_pure))return true;
+    const k=key(state);if(visited.has(k))return false;visited.add(k);
+    for(let from=0;from<state.length;from++){
+      if(_pure(state[from]))continue;
+      const sTop=_topClr(state[from]);if(sTop==='transparent')continue;
+      for(let to=0;to<state.length;to++){
+        if(from===to)continue;
+        const dTop=_topClr(state[to]);if(dTop!=='transparent'&&dTop!==sTop)continue;
+        if(_space(state[to])===0)continue;
+        const savedFrom=[...state[from]],savedTo=[...state[to]];
+        const cnt=Math.min(_topRun(state[from]),_space(state[to]));
+        let rm=0;for(let i=state[from].length-1;i>=0&&rm<cnt;i--)if(state[from][i]===sTop){state[from][i]='transparent';rm++;}
+        let ad=0;for(let i=0;i<state[to].length&&ad<cnt;i++)if(state[to][i]==='transparent'){state[to][i]=sTop;ad++;}
+        if(dfs(state,depth+1))return true;
+        state[from]=savedFrom;state[to]=savedTo;
+      }
+    }
+    return false;
+  }
+  return dfs(tubes.map(t=>[...t]),0);
+}
+
+function saveLevel(){
+  const name=document.getElementById('editor-name').value.trim()||'未命名关卡';
+  const colorsUsed=new Set();
+  let hasEmpty=false;
+  editTubes.forEach(t=>{let f=0;t.forEach(c=>{if(c!=='transparent') colorsUsed.add(c);else f++;});if(f>0)hasEmpty=true;});
+  if(colorsUsed.size<2){alert('请至少使用 2 种颜色！');return;}
+  if(!hasEmpty){alert('⚠️ 所有管子都满了！请添加至少一根空管，否则无法倒水。');return;}
+  const data=editTubes.map(t=>[...t]);
+  const caps=[...editCaps];
+  const hid=[...editHidden];
+  if(!checkSolvable(data)){
+    if(!confirm('⚠️ 该关卡可能无解（或搜索超时）。\n\n是否仍要保存？')) return;
+  }
+  const levels=loadLevels();
+  const id=Date.now().toString(36);
+  levels.push({id,name,tubes:data,caps:caps,hidden:hid,colorCount:colorsUsed.size,createdAt:Date.now()});
+  localStorage.setItem(LS_KEY,JSON.stringify(levels));
+  alert('✅ 已保存！');
+}
+
+function testLevel(){
+  const colorsUsed=new Set();
+  let hasEmpty=false;
+  editTubes.forEach(t=>{let f=0;t.forEach(c=>{if(c!=='transparent') colorsUsed.add(c);else f++;});if(f>0)hasEmpty=true;});
+  if(colorsUsed.size<2){alert('请至少使用 2 种颜色！');return;}
+  if(!hasEmpty){alert('⚠️ 所有管子都满了！请按 ＋ 加试管 添加空管，否则无法倒水。');return;}
+  const data=editTubes.map(t=>[...t]);
+  const caps=[...editCaps];
+  const hid=[...editHidden];
+  if(!checkSolvable(data)){
+    if(!confirm('⚠️ 该关卡可能无解。\n\n是否仍要试玩？')) return;
+  }
+  playMode='custom';
+  playLevelId=null;
+  document.getElementById('play-label').textContent='试玩 · 自制关卡';
+  showScreen('play');
+  resetFromData(data,hid,caps);
+}
+
+document.getElementById('btn-add-tube').addEventListener('click',addEditTube);
+document.getElementById('btn-rm-tube').addEventListener('click',rmEditTube);
+document.getElementById('btn-save-level').addEventListener('click',saveLevel);
+document.getElementById('btn-test-level').addEventListener('click',testLevel);
+
+// ═══════════════════════════════════════════════
+//  我的关卡
+// ═══════════════════════════════════════════════
+
+function loadLevels(){
+  try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){return[];}
+}
+function saveLevels(levels){localStorage.setItem(LS_KEY,JSON.stringify(levels));}
+
+function renderLevelsList(){
+  const levels=loadLevels();
+  const list=document.getElementById('levels-list');
+  if(levels.length===0){
+    list.innerHTML='<div class="empty-state">📭<br>还没有自制关卡<br>去「关卡自制器」创建一个吧</div>';
+    return;
+  }
+  list.innerHTML=levels.map(l=>`
+    <div class="level-card">
+      <div class="info">
+        <div class="lname">${escHtml(l.name)}</div>
+        <div class="lmeta">${l.colorCount} 色 · ${l.tubes.length} 管 · ${fmtDate(l.createdAt)}</div>
+      </div>
+      <div class="actions">
+        <button class="btn" data-play="${l.id}">▶</button>
+        <button class="btn" data-del="${l.id}" style="color:var(--danger)">🗑</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-play]').forEach(b=>{
+    b.addEventListener('click',()=>playCustomLevel(b.dataset.play));
+  });
+  list.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click',()=>deleteLevel(b.dataset.del));
+  });
+}
+
+function playCustomLevel(id){
+  const levels=loadLevels();
+  const l=levels.find(x=>x.id===id);
+  if(!l) return;
+  playMode='custom';
+  playLevelId=id;
+  document.getElementById('play-label').textContent=l.name;
+  showScreen('play');
+  resetFromData(l.tubes.map(t=>[...t]),l.hidden||null,l.caps||null);
+}
+
+function deleteLevel(id){
+  if(!confirm('确定删除这个关卡吗？')) return;
+  let levels=loadLevels();
+  levels=levels.filter(l=>l.id!==id);
+  saveLevels(levels);
+  renderLevelsList();
+}
+
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function fmtDate(ts){const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+// ═══════════════════════════════════════════════
+//  游戏引擎（与之前逻辑一致）
+// ═══════════════════════════════════════════════
+
+let tubes, moves, won, selected, undoStack, colorN;
+let feedback=null;
+let transferAnims=[]; // 支持多动画同时进行
+let cachedSlots=null;
+function isAnimating(i){return transferAnims.some(a=>a.from===i||a.to===i);}
+let cw, ch, slots=[];
+
+const topIdx=w=>{for(let i=w.length-1;i>=0;i--)if(w[i]!=='transparent')return i;return-1;};
+const topClr=w=>{const i=topIdx(w);return i===-1?'transparent':w[i];};
+const topRun=w=>{const i=topIdx(w);if(i===-1)return 0;const c=w[i];let n=0;for(let j=i;j>=0&&w[j]===c;j--)n++;return n;};
+const space=w=>{let n=0;for(let i=w.length-1;i>=0&&w[i]==='transparent';i--)n++;return n;};
+const filled=w=>{let n=0;for(let i=0;i<w.length;i++)if(w[i]!=='transparent')n++;return n;};
+const pure=w=>{const f=w[0];for(let i=1;i<w.length;i++)if(w[i]!==f)return false;return true;};
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// genLevel 已替换为 genLevelSmart（反向构造保证有解）
+
+function resetFromData(data, mask=null, caps=null){
+  tubesInit=data.map(t=>[...t]);
+  tubes=data.map(t=>[...t]);
+  capsInit=caps?[...caps]:data.map(t=>t.length);
+  tubeCaps=[...capsInit];
+  hiddenMaskInit=mask?[...mask]:new Array(data.length).fill(0);
+  hiddenMask=[...hiddenMaskInit];
+  revealAnim=null;
+  colorN=new Set(tubes.flat()).size-1;
+  moves=0;won=false;selected=-1;undoStack=[];feedback=null;transferAnims=[];
+  elOverlay.classList.remove('show');
+  syncUI();layout();
+}
+
+function reset(n=colorN){
+  colorN=n;
+  const data=genLevelSmart(n,2,50+n*10);
+  tubesInit=data.map(t=>[...t]);
+  tubes=data.map(t=>[...t]);
+  capsInit=data.map(t=>t.length);
+  tubeCaps=[...capsInit];
+  hiddenMaskInit=new Array(tubes.length).fill(0);
+  hiddenMask=[...hiddenMaskInit];
+  revealAnim=null;
+  moves=0;won=false;selected=-1;undoStack=[];feedback=null;transferAnims=[];
+  elOverlay.classList.remove('show');
+  syncUI();layout();
+}
+
+function restartLevel(){
+  tubes=tubesInit.map(t=>[...t]);
+  tubeCaps=[...capsInit];
+  hiddenMask=[...hiddenMaskInit];
+  revealAnim=null;
+  moves=0;won=false;selected=-1;undoStack=[];feedback=null;transferAnims=[];
+  elOverlay.classList.remove('show');
+  syncUI();layout();
+}
+
+// ── 盲盒：获取可见顶层（跳过隐藏层） ──
+function visibleTopIdx(water, hid){
+  for(let i=water.length-1;i>=0;i--){
+    if(water[i]==='transparent')continue;
+    if(i<hid)return -1;
+    return i;
+  }
+  return -1;
+}
+function visibleTopClr(water,hid){const i=visibleTopIdx(water,hid);return i===-1?'transparent':water[i];}
+function visibleTopRun(water,hid){const i=visibleTopIdx(water,hid);if(i===-1)return 0;const c=water[i];let n=0;for(let j=i;j>=hid&&water[j]===c;j--)n++;return n;}
+
+function exitPlay(){transferAnims=[];}
+
+function layout(){
+  if(!tubes||tubes.length===0)return;
+  const w=Math.min(window.innerWidth-24,1100);
+  const perRow=Math.max(2,Math.floor((w-40)/(TW+GAP)));
+  const rows=Math.ceil(tubes.length/perRow);
+  const rowHeights=[];
+  for(let r=0;r<rows;r++){
+    const start=r*perRow,end=Math.min(start+perRow,tubes.length);
+    let maxH=totalH(4);for(let i=start;i<end;i++)maxH=Math.max(maxH,totalH(tubeCaps[i]||4));
+    rowHeights.push(maxH);
+  }
+  const neededH=rowHeights.reduce((a,b)=>a+b+16,0)+100;
+  cw=w;ch=Math.max(window.innerHeight-180,neededH*1.6,500);
+  canvas.width=cw;canvas.height=ch;
+  canvas.style.width=cw+'px';canvas.style.height=ch+'px';
+  // 管子排在画布中央
+  slots=[];
+  var totalRowsH=0;for(var rh2=0;rh2<rowHeights.length;rh2++)totalRowsH+=rowHeights[rh2]+16;
+  var topY=Math.max(40,Math.round((ch-totalRowsH)/2));
+  for(let r=0;r<rows;r++){
+    const start=r*perRow,end=Math.min(start+perRow,tubes.length);
+    const cnt=end-start,rw=cnt*TW+(cnt-1)*GAP,rx=(cw-rw)/2;
+    for(let i=start;i<end;i++){
+      const cap=tubeCaps[i]||4;
+      const th=totalH(cap);
+      slots.push({x:rx+(i-start)*(TW+GAP),y:topY+(rowHeights[r]-th)}); // 底部对齐
+    }
+    topY+=rowHeights[r]+16;
+  }
+}
+
+function isCapped(i){
+  if(!pure(tubes[i])||filled(tubes[i])===0||hiddenMask[i]>0)return false;
+  // 变容模式：该颜色总数必须等于管子容量才算完成
+  const clr=tubes[i][0];if(clr==='transparent')return false;
+  let total=0;for(const t of tubes)for(const c of t)if(c===clr)total++;
+  return total===tubes[i].length; // 颜色总数 = 管容量
+}
+function tap(idx){
+  if(won)return;
+  if(idx<0){selected=-1;syncUI();return;}
+  if(idx>=tubes.length)return;
+  if(isAnimating(idx))return; // 该管正在倒水中
+  if(selected===-1){
+    if(visibleTopIdx(tubes[idx],hiddenMask[idx])===-1)return;
+    if(isCapped(idx))return;
+    selected=idx;
+  }else if(selected===idx){selected=-1;}
+  else{
+    const from=selected,to=idx;selected=-1;
+    if(isAnimating(to)){syncUI();return;}
+    if(isCapped(to)){syncUI();return;}
+    attempt(from,to);
+  }
+  syncUI();
+}
+
+function addTubeDuringPlay(){
+  if(won||transferAnims.length>0)return;
+  const idx=tubes.length;
+  tubes.push(new Array(4).fill('transparent'));
+  tubeCaps.push(4);
+  hiddenMask.push(0);
+  // 在画布中找空地放置，不动已有管子
+  const free=findFreeSpot(idx,40+Math.random()*(cw-TW-40),40+Math.random()*200);
+  slots.push({x:free.x,y:free.y});
+  selected=-1;
+}
+document.getElementById('btn-add-tube-play').addEventListener('click',addTubeDuringPlay);
+
+function attempt(from,to){
+  const src=tubes[from],dst=tubes[to];
+  const hid=hiddenMask[from];
+  const sc=visibleTopClr(src,hid);
+  if(sc==='transparent'){reject(from);return;}
+  if(space(dst)===0){reject(from);return;}
+  const dc=topClr(dst);
+  if(dc!=='transparent'&&dc!==sc){reject(from);return;}
+  const run=visibleTopRun(src,hid),sp=space(dst),cnt=Math.min(run,sp);
+  const oldHiddenFrom=hiddenMask[from];
+  undoStack.push({from,to,color:sc,count:cnt,oldHiddenFrom});
+  // 缓存位置启动动画
+  cachedSlots=slots.map(s=>({x:s.x,y:s.y}));
+  const fp=cachedSlots[from],tp=cachedSlots[to];
+  const thT=totalH(tubeCaps[to]||4);
+  const topI=topIdx(src),waterFrac=topI>=0?(topI+0.8)/src.length:0.25;
+  const maxTilt=Math.PI/180*(20+(1-waterFrac)*55);
+  const droplets=[];
+  for(let d=0;d<8;d++)droplets.push({delay:0.35+Math.random()*0.3,radius:2.5+Math.random()*4,offsetX:(Math.random()-0.5)*10});
+  transferAnims.push({from,to,fromColor:sc,count:cnt,elapsed:0,duration:1100,_last:performance.now(),_soundPlayed:false,
+    fromOrigX:fp.x,fromOrigY:fp.y,fromTargetX:Math.max(4,tp.x-TW*0.6),fromTargetY:tp.y-thT*0.5,
+    sourceX:fp.x,sourceY:fp.y,sourceTilt:0,targetBump:1,
+    droplets,preSource:src.slice(),preTarget:dst.slice(),maxTilt,oldHiddenFrom});
+  moves++;
+  syncUI();
+}
+
+function reject(idx){feedback={tube:idx,kind:'reject',t:performance.now()};}
+
+function undo(){
+  if(won||undoStack.length===0)return;
+  const act=undoStack.pop();
+  const{from,to,color,count,oldHiddenFrom}=act;
+  let rm=0;for(let i=tubes[to].length-1;i>=0&&rm<count;i--)if(tubes[to][i]===color){tubes[to][i]='transparent';rm++;}
+  let ad=0;for(let i=0;i<tubes[from].length&&ad<count;i++)if(tubes[from][i]==='transparent'){tubes[from][i]=color;ad++;}
+  if(oldHiddenFrom!==undefined) hiddenMask[from]=oldHiddenFrom;
+  moves=Math.max(0,moves-1);selected=-1;feedback=null;syncUI();
+}
+
+function checkWin(){
+  if(tubes.every(pure)){
+    won=true;
+    let par=colorN*7,stars=1;
+    if(moves<=par*1.1)stars=3;else if(moves<=par*1.7)stars=2;
+    const emoji=['','⭐','🌟🌟','🌟🌟🌟'][stars];
+    elDetail.innerHTML=`${emoji}<br>${moves} 步完成`;
+    elOverlay.classList.add('show');
+  }
+}
+
+function syncUI(){elMoves.textContent=moves;elUndo.disabled=(undoStack.length===0||won);}
+
+// ── 渲染 ──
+function lighten(hex,a){const n=parseInt(hex.slice(1),16);return`rgb(${Math.min(255,(n>>16)+a)},${Math.min(255,(n>>8&255)+a)},${Math.min(255,(n&255)+a)})`;}
+function darken(hex,a){const n=parseInt(hex.slice(1),16);return`rgb(${Math.max(0,(n>>16)-a)},${Math.max(0,(n>>8&255)-a)},${Math.max(0,(n&255)-a)})`;}
+
+function drawBg(){ctx.fillStyle='#f7f5f0';ctx.fillRect(0,0,cw,ch);}
+
+function drawStand(x,y,cap){
+  const cx=x+TW/2,bottomY=y+RIM_H+straightH(cap)+BOTTOM_R;
+  ctx.fillStyle='#e8e4dc';ctx.beginPath();ctx.ellipse(cx,bottomY+1,TW/2+1,3,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#dcd7ce';ctx.beginPath();ctx.ellipse(cx,bottomY-1,TW/2-1,2,0,0,Math.PI*2);ctx.fill();
+}
+
+function drawCap(x,y,cap){
+  const cx=x+TW/2,topY=y+RIM_H;
+  // 瓶盖主体
+  ctx.fillStyle='#d5c4a1';ctx.strokeStyle='#b8a888';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(x-3,topY-10,TW+6,12,5);ctx.fill();ctx.stroke();
+  // 顶部高光
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.beginPath();ctx.roundRect(x,topY-8,TW,3,2);ctx.fill();
+  // 底部阴影
+  ctx.fillStyle='rgba(0,0,0,0.10)';
+  ctx.beginPath();ctx.roundRect(x-1,topY-1,TW+2,4,2);ctx.fill();
+}
+
+function drawTube(x,y,water,sel,fbKind,hidden=0,rv=1,rvPrev=0,cap=4,tubeIdx=-1){
+  const sh=straightH(cap),th=totalH(cap);
+  const cx=x+TW/2,bodyTop=y+RIM_H,straightBot=bodyTop+sh;
+  const innerX=x+WALL,innerTopY=bodyTop+WALL;
+  ctx.save();
+  if(sel){const glow=ctx.createRadialGradient(cx,y+th/2,TW*0.3,cx,y+th/2,TW*1.5);glow.addColorStop(0,'rgba(200,170,110,0.22)');glow.addColorStop(1,'rgba(200,170,110,0)');ctx.fillStyle=glow;ctx.fillRect(x-24,y-8,TW+48,th+20);}
+  const tubePath=()=>{ctx.beginPath();ctx.moveTo(x,bodyTop);ctx.lineTo(x,straightBot);ctx.arc(cx,straightBot,BOTTOM_R,Math.PI,0,true);ctx.lineTo(x+TW,bodyTop);ctx.closePath();};
+  tubePath();ctx.fillStyle='rgba(248,246,243,0.55)';ctx.fill();tubePath();ctx.strokeStyle='rgba(175,170,162,0.50)';ctx.lineWidth=1.8;ctx.stroke();
+  ctx.save();ctx.beginPath();ctx.moveTo(innerX,innerTopY);ctx.lineTo(innerX,straightBot);ctx.arc(cx,straightBot,INNER_R,Math.PI,0,true);ctx.lineTo(innerX+IW,innerTopY);ctx.closePath();ctx.clip();
+  // 合并同色相邻层为块
+  var blocks=[];
+  for(var bi=0;bi<water.length;bi++){if(water[bi]==='transparent')continue;var bc=water[bi];if(blocks.length>0&&blocks[blocks.length-1].c===bc)blocks[blocks.length-1].n++;else blocks.push({c:bc,n:1});}
+  var totalL=0;for(var bj=0;bj<blocks.length;bj++)totalL+=blocks[bj].n;
+  const innerDeepest=straightBot+INNER_R;
+  const ts=performance.now()/1000;
+  var drawIdx=0;
+  for(var bi2=0;bi2<blocks.length;bi2++){var clr=blocks[bi2].c,cnt=blocks[bi2].n;
+    var ly=innerDeepest-(drawIdx+cnt)*LAYER_H,lh=cnt*LAYER_H+1;
+    // 分数层：动画中水量渐变
+    if(water._partialIdx>=0&&water._partialIdx>=drawIdx&&water._partialIdx<drawIdx+cnt){lh-=(1-water._partialFrac)*LAYER_H;ly+=(1-water._partialFrac)*LAYER_H;}
+    var isHidden=hidden>0&&drawIdx<hidden;
+    var isRevealing=rv<1&&drawIdx===hidden&&hidden<rvPrev;
+    var isTop=(bi2===blocks.length-1);
+    if(isHidden&&!isRevealing){
+      var g=ctx.createLinearGradient(innerX,ly,innerX+IW,ly+lh);
+      var h0=((ts*50+ly*3)%360);
+      g.addColorStop(0,'hsl('+h0+',80%,45%)');g.addColorStop(0.25,'hsl('+((h0+60)%360)+',85%,42%)');g.addColorStop(0.5,'hsl('+((h0+120)%360)+',80%,48%)');g.addColorStop(0.75,'hsl('+((h0+180)%360)+',85%,40%)');g.addColorStop(1,'hsl('+((h0+240)%360)+',80%,46%)');
+      ctx.fillStyle=g;ctx.fillRect(innerX,ly,IW,lh);
+      ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('?',cx,ly+lh/2+5);
+    }else if(isRevealing){
+      var g=ctx.createLinearGradient(innerX,ly,innerX+IW,ly+lh);
+      var h0=((ts*50+ly*3)%360);
+      g.addColorStop(0,'hsl('+h0+',80%,45%)');g.addColorStop(0.25,'hsl('+((h0+60)%360)+',85%,42%)');g.addColorStop(0.5,'hsl('+((h0+120)%360)+',80%,48%)');g.addColorStop(0.75,'hsl('+((h0+180)%360)+',85%,40%)');g.addColorStop(1,'hsl('+((h0+240)%360)+',80%,46%)');
+      ctx.globalAlpha=1-rv;ctx.fillStyle=g;ctx.fillRect(innerX,ly,IW,lh);
+      ctx.fillStyle='rgba(255,255,255,'+(0.8*(1-rv))+')';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('?',cx,ly+lh/2+5);
+      ctx.globalAlpha=rv;
+      var g2=ctx.createLinearGradient(0,ly,0,ly+lh);g2.addColorStop(0,lighten(clr,20));g2.addColorStop(0.55,clr);g2.addColorStop(1,darken(clr,12));ctx.fillStyle=g2;ctx.fillRect(innerX,ly,IW,lh);
+      ctx.globalAlpha=1;
+    }else{
+      var g=ctx.createLinearGradient(0,ly,0,ly+lh);g.addColorStop(0,lighten(clr,20));g.addColorStop(0.55,clr);g.addColorStop(1,darken(clr,12));ctx.fillStyle=g;ctx.fillRect(innerX,ly,IW,lh);
+      if(isTop){var sY2=ly;var nw=performance.now()/1000;ctx.strokeStyle='rgba(255,255,255,0.40)';ctx.lineWidth=1.8;var wa=1.5;ctx.beginPath();var sx=innerX+3,ex=innerX+IW-3;ctx.moveTo(sx,sY2+Math.sin(nw*3+sx*0.04)*wa);for(var wx=sx+2;wx<=ex;wx+=2)ctx.lineTo(wx,sY2+Math.sin(nw*3+wx*0.04)*wa);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,0.22)';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(sx,sY2-2+Math.sin(nw*4.5+sx*0.06)*wa*0.5);for(var wx2=sx+2;wx2<=ex;wx2+=2)ctx.lineTo(wx2,sY2-2+Math.sin(nw*4.5+wx2*0.06)*wa*0.5);ctx.stroke();}
+    }
+    drawIdx+=cnt;
+  }
+  // 涟漪 + 反光
+  var wH2=totalL*LAYER_H;
+  if(totalL>1){var n2=performance.now()/1000,wL2=innerX+2,wR2=innerX+IW-2,wB2=innerDeepest;for(var r=1;r<=4;r++){var ry2=wB2-wH2+(wH2/5)*r;ctx.strokeStyle='rgba(255,255,255,'+(0.03+r*0.01)+')';ctx.lineWidth=0.5+r*0.07;ctx.beginPath();ctx.moveTo(wL2,ry2+Math.sin(n2*(1.5+r*0.4)+r)*0.7);for(var rx2=wL2+3;rx2<=wR2;rx2+=3)ctx.lineTo(rx2,ry2+Math.sin(n2*(1.5+r*0.4)+rx2*0.04+r)*0.7);ctx.stroke();}}
+  if(totalL>0){var rfY=innerDeepest-wH2*0.4;ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.ellipse(innerX+1,rfY,6,14,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.03)';ctx.beginPath();ctx.ellipse(innerX+3,rfY-10,4,10,0,0,Math.PI*2);ctx.fill();}
+  if(totalL===0){ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(innerX+2,innerTopY+sh*0.35,IW-4,sh*0.45);}
+  ctx.restore();
+  if(fbKind){const now=performance.now(),age=now-(feedback?.t||0);if(age<FB_DURATION){const p=age/FB_DURATION,a=(1-p)*0.28;ctx.fillStyle=fbKind==='accept'?`rgba(120,200,140,${a})`:`rgba(220,130,130,${a})`;tubePath();ctx.fill();}}
+  ctx.fillStyle='rgba(248,246,243,0.45)';ctx.strokeStyle='rgba(175,170,162,0.48)';ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(cx,bodyTop,TW/2,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='rgba(200,196,190,0.28)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(cx,bodyTop,TW/2-3,1.8,0,0,Math.PI*2);ctx.stroke();
+  const hlX=x+WALL+3;ctx.strokeStyle='rgba(255,255,255,0.32)';ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(hlX,bodyTop+14);ctx.lineTo(hlX,straightBot-14);ctx.stroke();
+  ctx.restore();
+}
+
+// ── 动画辅助：视觉水量插值（匹配源码 buildSourceWater / buildTargetWater） ──
+function buildSourceWater(pre,color,count,progress){
+  const w=pre.slice(),total=count*progress;
+  const full=Math.floor(total),frac=total-full;
+  let rm=0;for(let i=w.length-1;i>=0&&rm<full;i--){if(w[i]===color){w[i]='transparent';rm++;}}
+  if(frac>0.001&&full<count){for(let i=w.length-1;i>=0;i--){if(w[i]===color){w._partialIdx=i;w._partialFrac=1-frac;break;}}}
+  return w;
+}
+function buildTargetWater(pre,color,count,progress){
+  const w=pre.slice(),total=count*progress;
+  const full=Math.floor(total),frac=total-full;
+  let ad=0;for(let i=0;i<w.length&&ad<full;i++){if(w[i]==='transparent'){w[i]=color;ad++;}}
+  if(frac>0.001&&full<count){let ad2=0;for(let i=0;i<w.length;i++){if(w[i]==='transparent'){ad2++;if(ad2===1){w[i]=color;w._partialIdx=i;w._partialFrac=frac;break;}}}}
+  return w;
+}
+
+function render(now){
+  if(!tubes||tubes.length===0||slots.length===0){ctx.clearRect(0,0,cw,ch);drawBg();return;}
+  ctx.clearRect(0,0,cw,ch);drawBg();
+  // ── 更新所有动画 ──
+  const easeInOut=x=>x<0.5?2*x*x:-1+(4-2*x)*x,easeOut=x=>1-(1-x)*(1-x);
+  for(let ai=transferAnims.length-1;ai>=0;ai--){
+    const a=transferAnims[ai];
+    let dt=now-(a._last||now);if(dt<0)dt=0;if(dt>33)dt=33;
+    a.elapsed=Math.min(a.duration,a.elapsed+dt);a._last=now;
+    const animT=Math.min(a.elapsed/a.duration,1);
+    if(!a._soundPlayed){playPourSound();a._soundPlayed=true;}
+    if(animT<=0.12){const p1=easeInOut(animT/0.12);a.sourceX=a.fromOrigX+(a.fromTargetX-a.fromOrigX)*p1;a.sourceY=a.fromOrigY+(a.fromTargetY-a.fromOrigY)*p1;a.sourceTilt=0;a.targetBump=1;}
+    else if(animT<=0.60){a.sourceX=a.fromTargetX;a.sourceY=a.fromTargetY;const p2=(animT-0.12)/0.48,wobble=Math.sin(a.elapsed*0.015)*(4*Math.PI/180)*p2;a.sourceTilt=a.maxTilt*easeInOut(p2)+wobble;const bp=Math.max(0,Math.min(1,(animT-0.25)/0.2));a.targetBump=1+Math.sin(bp*Math.PI)*0.06;}
+    else if(animT<=0.78){a.sourceX=a.fromTargetX;a.sourceY=a.fromTargetY;a.sourceTilt=a.maxTilt*(1-easeOut((animT-0.60)/0.18));a.targetBump=1;}
+    else{a.sourceX=a.fromTargetX+(a.fromOrigX-a.fromTargetX)*easeInOut((animT-0.78)/0.22);a.sourceY=a.fromTargetY+(a.fromOrigY-a.fromTargetY)*easeInOut((animT-0.78)/0.22);a.sourceTilt=0;a.targetBump=1;}
+    a._animT=animT;a._pourP=Math.max(0,Math.min(1,(animT-0.12)/0.48));
+    if(animT>=1){finishTransferAnim(a);transferAnims.splice(ai,1);}
+  }
+  // 反馈 & 揭示
+  let fbTube=-1,fbKind=null;
+  if(feedback){const age=now-feedback.t;if(age<FB_DURATION){fbTube=feedback.tube;fbKind=feedback.kind;}else feedback=null;}
+  let rvTube=-1,rvP=1,rvPrev=0;
+  if(revealAnim){const el=now-revealAnim.startTime;if(el<600){rvTube=revealAnim.tube;rvP=el/600;rvPrev=revealAnim.prevHidden;}else revealAnim=null;}
+  // ── 第一遍：普通管 + 动画目标管 ──
+  const pourIdxs=new Set(transferAnims.map(a=>a.from));
+  for(let i=0;i<tubes.length;i++){
+    if(pourIdxs.has(i)){const pos=slots[i];drawStand(pos.x,pos.y,tubeCaps[i]||4);continue;}
+    const pos=slots[i];const floatY=(selected===i&&transferAnims.length===0)?-7:0;
+    const rv=(rvTube===i)?rvP:1;const cap=tubeCaps[i]||4;
+    let water=tubes[i],bump=1;
+    for(const a of transferAnims){if(i===a.to){water=buildTargetWater(a.preTarget,a.fromColor,a.count,a._pourP);bump=a.targetBump||1;}}
+    ctx.save();const cx=pos.x+TW/2,cy=pos.y+totalH(cap)/2;
+    ctx.translate(cx,cy);ctx.scale(bump,bump);ctx.translate(-cx,-cy);
+    drawStand(pos.x,pos.y+floatY,cap);
+    drawTube(pos.x,pos.y+floatY,water,selected===i,(fbTube===i)?fbKind:null,hiddenMask[i]||0,rv,rvPrev,cap,i);
+    const isPourInvolved=transferAnims.some(a=>a.from===i||a.to===i);
+    if(!isPourInvolved&&isCapped(i))drawCap(pos.x,pos.y+floatY,cap);
+    ctx.restore();
+  }
+  // ── 第二遍：所有源管（最上层，带倾斜） ──
+  for(const a of transferAnims){
+    const cap=tubeCaps[a.from]||4;
+    const water=buildSourceWater(a.preSource,a.fromColor,a.count,a._pourP);
+    const pivX=a.sourceX+TW,pivY=a.sourceY;
+    ctx.save();ctx.translate(pivX,pivY);ctx.rotate(a.sourceTilt);ctx.translate(-pivX,-pivY);
+    drawTube(a.sourceX,a.sourceY,water,false,null,hiddenMask[a.from]||0,rvTube===a.from?rvP:1,rvPrev,cap,a.from);
+    ctx.restore();
+  }
+  // ── 动画特效 ──
+  for(const a of transferAnims){if(a._animT>0.08&&a._animT<0.82)drawPourAnim(a);}
+  // ── 拖拽中的管子画在最上层 ──
+  if(dragState){
+    const i=dragState.idx;const cap=tubeCaps[i]||4;
+    drawStand(slots[i].x,slots[i].y,cap);
+    drawTube(slots[i].x,slots[i].y,tubes[i],false,null,hiddenMask[i]||0,1,0,cap,i);
+    if(isCapped(i))drawCap(slots[i].x,slots[i].y,cap);
+  }
+  syncUI();
+}
+
+function finishTransferAnim(a){
+  const wf=tubes[a.from],wt=tubes[a.to];
+  let rm=0;for(let i=wf.length-1;i>=0&&rm<a.count;i--)if(wf[i]===a.fromColor){wf[i]='transparent';rm++;}
+  let ad=0;for(let i=0;i<wt.length&&ad<a.count;i++)if(wt[i]==='transparent'){wt[i]=a.fromColor;ad++;}
+  // 盲盒揭示
+  if(a.oldHiddenFrom>0&&visibleTopIdx(wf,a.oldHiddenFrom)===-1){
+    revealAnim={tube:a.from,startTime:performance.now(),prevHidden:a.oldHiddenFrom};
+    hiddenMask[a.from]=a.oldHiddenFrom-1;
+  }
+  checkWin();syncUI();
+}
+
+function drawPourAnim(a){
+  const animT=a._animT,pourP=a._pourP;
+  const tp=cachedSlots[a.to];if(!tp)return;
+  const color=a.fromColor;
+  // 源管出水口（倾斜后下方，匹配源码）
+  const tiltFrac=Math.min(1,a.sourceTilt/(Math.PI/180*60));
+  const thSrc=totalH(tubeCaps[a.from]||4);
+  const fx=a.sourceX+TW*(0.5+tiltFrac*0.5);
+  const fy=a.sourceY+thSrc*0.2+tiltFrac*thSrc*0.6;
+  // 目标水面（含分数层，匹配源码）
+  const capT=tubeCaps[a.to]||4,thT=totalH(capT);
+  const tmpW=buildTargetWater(a.preTarget,a.fromColor,a.count,pourP);
+  const totalAdd=a.count*pourP,fullAdd=Math.floor(totalAdd),fracAdd=totalAdd-fullAdd;
+  const curW=a.preTarget.slice();
+  let ad=0;for(let ai=0;ai<curW.length&&ad<fullAdd;ai++){if(curW[ai]==='transparent'){curW[ai]=a.fromColor;ad++;}}
+  let surfIdx=-1,surfFrac=1;
+  for(let li=curW.length-1;li>=0;li--){if(curW[li]!=='transparent'){surfIdx=li;break;}}
+  if(fracAdd>0.001&&fullAdd<a.count){surfIdx=surfIdx>=0?surfIdx+1:0;surfFrac=fracAdd;}
+  const layerH=thT/curW.length;
+  const tx=tp.x+TW/2;
+  const ty=surfIdx>=0?tp.y+thT-(surfIdx+1)*layerH+layerH*(1-surfFrac):tp.y+thT*0.75;
+  // 淡入淡出
+  let alpha=1;if(animT<0.15)alpha=(animT-0.08)/0.07;if(animT>0.65)alpha=Math.max(0,(0.82-animT)/0.17);
+  ctx.globalAlpha=alpha;
+  // 水流
+  const streamW=3+a.sourceTilt/(Math.PI/180*70)*2.5;
+  ctx.strokeStyle=color;ctx.lineWidth=streamW;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(tx,fy);ctx.lineTo(tx,ty);ctx.stroke();
+  if(streamW>1.5){ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=streamW*0.3;ctx.beginPath();ctx.moveTo(tx,fy);ctx.lineTo(tx,ty);ctx.stroke();}
+  // 液滴
+  for(const d of a.droplets){
+    let dp=Math.max(0,Math.min(1,(animT-0.12-d.delay*0.5)/0.55));
+    if(dp<=0||dp>=1)continue;
+    ctx.beginPath();ctx.arc(tx+d.offsetX,fy+(ty-fy)*dp,d.radius*0.7,0,Math.PI*2);ctx.fillStyle=color;ctx.globalAlpha=alpha*0.7;ctx.fill();
+  }
+  // 波纹（匹配源码）
+  let ra=Math.max(0,(animT-0.2)/0.15);ra=Math.min(ra,(0.75-animT)/0.1+0.3);ra=Math.max(0,Math.min(1,ra));
+  if(ra>0){const rp=(animT-0.2)*3;for(let r=0;r<3;r++){ctx.strokeStyle=color;ctx.lineWidth=1*(1-r*0.25);ctx.globalAlpha=ra*(1-r*0.3)*0.4;ctx.beginPath();ctx.arc(tx,ty+12,Math.max(1,(rp*12+r*7)),0,Math.PI*2);ctx.stroke();}}
+  // 飞溅（匹配源码）
+  if(animT>0.2&&animT<0.7){const spl=Math.sin((animT-0.2)/0.5*Math.PI);const seed=Math.floor(a.elapsed/80);for(let sp=0;sp<5;sp++){ctx.beginPath();ctx.arc(tx+Math.sin(seed*7+sp*2.3)*10,ty+8-Math.abs(Math.cos(seed*3+sp))*15*spl,(1+Math.abs(Math.cos(seed+sp))*2.5),0,Math.PI*2);ctx.fillStyle=color;ctx.globalAlpha=alpha*spl*0.5;ctx.fill();}}
+  ctx.globalAlpha=1;ctx.lineCap='butt';
+}
+
+// ── 输入 ──
+function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*(cw/r.width),y:(e.clientY-r.top)*(ch/r.height)};}
+function hit(mx,my){for(let i=tubes.length-1;i>=0;i--){const s=slots[i];const th=totalH(tubeCaps[i]||4);if(mx>=s.x-4&&mx<=s.x+TW+4&&my>=s.y-4&&my<=s.y+th+6)return i;}return-1;}
+// ── 颜色名称映射 ──
+const COLOR_NAMES=[
+  '珊瑚红','薄荷绿','天空蓝','奶油黄','薰衣草紫',
+  '蜜桃橙','深湖绿','粉玫瑰','雾蓝','暖杏',
+  '亮粉红','草绿','紫罗兰','石板蓝','棕橘','深灰',
+];
+
+// ── 悬停颜色提示 ──
+let hoverTimer=null, hoverTarget=null;
+const tipEl=document.getElementById('color-tip');
+
+function layerHit(mx,my){
+  for(let i=tubes.length-1;i>=0;i--){
+    const s=slots[i];if(!s)continue;
+    const cap=tubeCaps[i]||4;
+    const sh=straightH(cap);
+    const bodyTop=s.y+RIM_H, straightBot=bodyTop+sh;
+    if(mx<s.x+WALL||mx>s.x+TW-WALL||my<bodyTop+WALL||my>straightBot+INNER_R)continue;
+    const water=tubes[i];
+    const innerDeepest=straightBot+INNER_R;
+    const layers=[];for(let j=0;j<water.length;j++)if(water[j]!=='transparent')layers.push({color:water[j],idx:j});
+    for(let li=0;li<layers.length;li++){
+      const ly=innerDeepest-(li+1)*LAYER_H;
+      if(my>=ly&&my<=ly+LAYER_H){
+        if(li<(hiddenMask[i]||0))return{color:'?hidden'};
+        return{color:layers[li].color};
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousemove',e=>{
+  const p=pos(e);const hit=layerHit(p.x,p.y);
+  if(hit&&hit.color!==hoverTarget){
+    hoverTarget=hit.color;
+    clearTimeout(hoverTimer);
+    tipEl.classList.remove('show');
+    hoverTimer=setTimeout(()=>{
+      const name=hit.color==='?hidden'?'❓ 未知（被遮挡）':(COLOR_NAMES[PALETTE.indexOf(hit.color)]||'未知');
+      tipEl.textContent=name;
+      tipEl.style.left=(e.clientX+14)+'px';
+      tipEl.style.top=(e.clientY-30)+'px';
+      tipEl.classList.add('show');
+    },1000);
+  }else if(!hit){
+    hoverTarget=null;clearTimeout(hoverTimer);tipEl.classList.remove('show');
+  }
+});
+canvas.addEventListener('mouseleave',()=>{hoverTarget=null;clearTimeout(hoverTimer);tipEl.classList.remove('show');});
+
+// ── 拖拽系统（代替原 click/touchstart） ──
+let dragState=null; // {idx,startX,startY,origX,origY,moved}
+const DRAG_THRESH=5;
+function tubeBounds(i){const s=slots[i];const cap=tubeCaps[i]||4;return{x:s.x-4,y:s.y-4,w:TW+8,h:totalH(cap)+8};}
+function tubeOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function hasOverlap(idx,checkX,checkY){
+  const b0={x:checkX-4,y:checkY-4,w:TW+8,h:totalH(tubeCaps[idx]||4)+8};
+  for(let i=0;i<tubes.length;i++){
+    if(i===idx)continue;
+    const b1=tubeBounds(i);
+    if(tubeOverlap(b0,b1))return true;
+  }
+  return false;
+}
+function findFreeSpot(idx,preferX,preferY){
+  if(!hasOverlap(idx,preferX,preferY))return{x:preferX,y:preferY};
+  // 螺旋搜索最近的无重叠位置
+  for(let r=10;r<=300;r+=15){
+    for(let a=0;a<Math.PI*2;a+=Math.PI/12){
+      const nx=preferX+Math.cos(a)*r,ny=preferY+Math.sin(a)*r;
+      const cx=Math.max(2,Math.min(cw-TW-2,nx));
+      const cy=Math.max(2,Math.min(ch-totalH(tubeCaps[idx]||4)-2,ny));
+      if(!hasOverlap(idx,cx,cy))return{x:cx,y:cy};
+    }
+  }
+  return{x:Math.max(2,Math.min(cw-TW-2,Math.random()*cw)),y:Math.max(2,Math.min(ch-totalH(tubeCaps[idx]||4)-2,Math.random()*ch))};
+}
+canvas.addEventListener('pointerdown',e=>{
+  const p=pos(e);const idx=hit(p.x,p.y);
+  if(idx>=0&&!won&&!isAnimating(idx)){
+    dragState={idx,startX:p.x,startY:p.y,origX:slots[idx].x,origY:slots[idx].y,moved:false};
+  }
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!dragState)return;
+  e.preventDefault();
+  const p=pos(e);const dx=p.x-dragState.startX,dy=p.y-dragState.startY;
+  if(Math.abs(dx)<DRAG_THRESH&&Math.abs(dy)<DRAG_THRESH)return;
+  dragState.moved=true;
+  slots[dragState.idx].x=dragState.origX+dx;slots[dragState.idx].y=dragState.origY+dy;
+  const cap=tubeCaps[dragState.idx]||4;
+  slots[dragState.idx].x=Math.max(2,Math.min(cw-TW-2,slots[dragState.idx].x));
+  slots[dragState.idx].y=Math.max(2,Math.min(ch-totalH(cap)-2,slots[dragState.idx].y));
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!dragState)return;
+  const idx=dragState.idx,moved=dragState.moved;
+  dragState=null;
+  if(moved){
+    const free=findFreeSpot(idx,slots[idx].x,slots[idx].y);
+    slots[idx].x=free.x;slots[idx].y=free.y;
+  }else tap(idx);
+  syncUI();
+});
+canvas.addEventListener('pointerleave',()=>{dragState=null;syncUI();});
+document.addEventListener('keydown',e=>{if(currentScreen!=='play')return;if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}if(e.key==='r'&&!e.ctrlKey&&!e.metaKey)restartLevel();});
+
+// ── 按钮 ──
+document.getElementById('btn-undo').addEventListener('click',undo);
+document.getElementById('btn-reset').addEventListener('click',restartLevel);
+const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special'};
+document.getElementById('btn-back-play').addEventListener('click',()=>{exitPlay();showScreen(modeBack[playMode]||'menu');});
+document.getElementById('btn-win-ok').addEventListener('click',()=>{elOverlay.classList.remove('show');showScreen(modeBack[playMode]||'menu');});
+
+window.addEventListener('resize',()=>{if(currentScreen==='play')layout();});
+
+// ── 循环 ──
+function loop(ts){render(ts);requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+
+// ── 启动 ──
+function init(){
+  reset(6);layout();
+  // 确保启动时编辑器也初始化
+  initEditor();
+}
+init();
+showScreen('menu'); // 默认显示主菜单
+
+// 进入编辑器时重新初始化
+document.querySelector('[data-screen="editor"]').addEventListener('click',()=>{
+  try{initEditor();}catch(e){console.error('editor init error:',e);}
+});
+
+
+// ── 倒水音效（pour.mp3，每次新建 Audio 播放） ──
+function playPourSound(){
+  try{const a=new Audio('pour.mp3');a.volume=0.22;a.play().catch(()=>{});}catch(e){}
+}
+
+console.log('🧪 倒水游戏 · 就绪');
+</script>
+</body>
+</html>
