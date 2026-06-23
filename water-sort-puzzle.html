@@ -277,85 +277,6 @@ const PALETTE=[
   '#FF7B7B','#7BC67E','#8B7CB8','#6B8FA0','#D4956B','#6B6B6B',
 ];
 
-// ── 经典关卡数据（16色索引，每串4位十六进制=1管，逗号分隔=1关） ──
-const CLASSIC_DATA=[
-  "1103,2221,0033,0321","3301,3022,1203,1201","4312,4300,2432,3010,4112","0412,3434,0014,0122,2133",
-  "2424,3250,5015,3040,3135,2141","4453,2020,2330,1551,2501,1434","2864,0224,1361,6044,6283,0811,8303",
-  "1653,3224,1426,1605,3015,4500,4623","4466,6320,5782,3732,8780,7440,0585,5326",
-  "0123,0123,0123,0123,4567,5674,6745,7456","2200,6384,7318,7541,3674,6568,0741,5835,0212",
-  "8224,2375,3700,2650,5765,1674,8141,3160,8384","3667,0747,4288,4586,7290,9950,4383,2216,1903,1155",
-  "5010,4791,9668,1390,3868,5142,7756,3495,0322,2487",
-  "4709,1162,aa27,3255,053a,8369,9486,3796,8a47,0521,4081",
-  "1430,1920,1788,5529,7a36,2a96,7550,4869,4017,43a3,68a2",
-  "3407,2825,a978,4613,0654,4051,7906,3895,aa79,a113,8262",
-  "6324,8897,3469,4a23,5771,1562,129a,8514,007a,5a09,8630",
-  "33a4,3896,6170,1522,6943,aa5a,1687,2080,0547,9725,8941",
-  "5107,4761,8186,9a53,4350,9278,1745,62a9,2a43,9068,320a",
-  "ba79,0621,0148,1522,7187,a332,883a,9653,4ab6,7064,b0b4,5599",
-  "0511,3b07,7140,1794,6862,82ab,5866,a352,7209,4a34,35b9,89ba",
-  "8213,6a47,7537,45a0,1a06,0b96,4190,56a4,b212,b788,3599,23b8",
-  "4188,63a3,7b60,0170,4497,537a,5091,a62b,5532,499a,1b8b,2682",
-  "3b52,7077,8295,3490,2318,a169,2aab,051b,46b3,5a06,8814,6947",
-  "3421,a367,6619,4a1a,6273,88b0,7814,9979,00b2,3b5a,8b02,5455",
-  "2440,0312,6833,59b6,9712,9706,b758,ba24,0cb8,1c65,45c8,c17a,3aa9",
-  "9c75,a536,9bb7,0824,22cc,639c,268a,4043,781a,31b9,5080,714a,b165",
-  "2975,95a2,1538,a060,cbc0,b874,4549,61c7,349b,a802,17b3,3a16,862c",
-  "8321,b3d9,ab42,6751,1000,cdd8,1bc5,5456,3d96,a40a,4b82,6c72,93ca,9877",
-  "c6a8,d520,421a,d867,3036,2d83,9a69,cbb9,47b5,57cc,1511,0ab8,7d20,3944",
-  "86da,5b61,5263,28d3,9570,ccb9,0437,8414,705b,1acb,12dc,792a,9d03,8a64",
-  "c249,da02,5904,7328,19c8,6dd5,a26b,8765,4933,adc7,113c,74b1,608b,ab50",
-  "51bb,30c6,49c7,3213,91c7,a750,bd2c,3686,a8a7,0910,bd85,2d94,4564,8da2",
-  "11a7,eea9,d223,8c8d,55d4,7304,580c,0679,698c,3b49,a45b,76c0,e1b1,6ad2,be32",
-  "c652,72c3,4e38,551a,b9ab,6e1e,c00a,7a44,8932,b8d6,30d9,b927,45ce,11d0,768d",
-  "d141,8a54,953e,aa56,8967,3d4c,8da1,9bc7,03e8,ecb0,5272,be39,4261,db60,702c",
-  "687c,c462,3535,0496,0232,5bad,e7ae,1e4b,a4d1,eb80,8b23,195c,c7da,d609,8917",
-  "cb19,029d,1746,246b,525b,83ea,aa03,e55d,38b9,27a4,3681,4e07,0dcc,91dc,87e6",
-  "b434,9d33,a5cb,1879,560b,86c3,7a1d,b8ca,921d,7105,ede7,0ec6,6294,e48a,2205",
-  "1ad8,5060,748a,3893,d075,b774,3016,acbe,2ea9,e158,9524,bc4e,6c9b,63d2,2c1d",
-  "6c67,27c3,9086,b951,d0e5,8894,1c93,05c2,7ad2,e241,3b71,4bdd,0a3b,6aee,48a5",
-  "6910,1412,de54,aa31,6b0d,587a,9c87,68d2,60c4,7b95,523a,ee32,8ce3,07dc,bb94",
-  "1c8a,8302,c4b9,6635,7ecb,7e21,8a1a,deda,5d00,b697,b945,e34d,2518,0436,c927",
-  "4e35,31ea,14cb,1da4,8925,8283,bdac,626d,5795,e090,6b07,a60b,1747,cc39,de28",
-  "4a34,9c88,d0eb,945e,232e,a79b,2752,6c58,4d50,d1b0,6cdc,7e38,76a6,3b01,a119",
-  "e3a6,8331,50b0,40b3,e2e2,961a,4897,575c,e44d,c82b,5d77,9da0,c86d,b921,16ca",
-  "d195,3646,a2cb,7e41,0c2c,55ab,857d,02e4,379d,60d3,19ea,8819,b437,8eca,620b",
-  "18ea,3632,1388,2b06,5d24,e6ac,96ab,3ac5,4d25,7481,904e,0059,97d7,ceb7,1dbc",
-  "2c4d,1085,968e,3c56,e9c1,86b3,7774,da36,ba7c,80ea,2290,d539,0da2,14b5,1b4e",
-  "07b9,5281,be3d,2213,62a6,6a11,93e0,557a,46dc,b3ce,ce40,a879,8b05,dc49,d847",
-  "b101,689b,09ec,6c2a,e584,4978,4ad7,23b7,8d6a,5036,bc07,5a31,124d,92ce,d53e",
-  "119a,3bc7,5d29,d320,2c67,1a9a,b75b,e0a5,038c,80bc,e698,8621,354d,4d46,e74e",
-  "e2e9,c987,7b54,3b56,dc28,3d91,0576,e6c6,014a,2430,d2e8,7b04,3bd1,8aa1,c95a",
-  "3ca2,b830,6e0c,4550,5591,4d76,7d17,e8a9,7c4b,26ee,01ab,d462,3d3a,18c9,b982",
-  "53b1,60c5,e144,937b,4c18,cd8c,2707,3d64,b9ad,1e03,d769,25b2,05a2,a96a,88ee",
-  "a792,bcd6,cc30,bab1,1447,4086,e534,aed9,1536,10ea,7e80,2c95,d2b2,5838,d796",
-  "171b,16ec,7594,d5a3,6ace,9224,3eb3,8926,0a50,52be,d840,cd8a,dc03,b417,9687",
-  "4063,42d5,3994,67e8,ed3e,8c9a,5e1b,3dc9,16a0,ac5b,4287,6527,bd17,a2cb,1080",
-  "a100,e268,6918,d479,87be,cc5c,7bb9,31d0,0e35,ad35,24e5,14c3,a7bd,622a,4869",
-  "51d7,c286,ab1b,4dc4,696c,3520,e870,d60e,a933,1ae0,791e,49bb,5dc7,2848,a523",
-  "e896,624c,3a20,751a,d4da,1e5c,c007,e323,b7db,8885,d63b,4511,490e,2c69,9b7a",
-  "1816,e639,dd0c,2552,d649,403b,1c72,4d87,a709,5956,cba8,ceb3,417b,8aea,e230",
-  "ae87,b112,3412,a699,2756,b3b2,6054,9ced,dcc0,9d37,74eb,5aa0,03e8,5c1d,6848",
-  "218b,be37,4952,9a37,3b57,4c66,c61d,0e00,4a8b,29ac,215e,d901,d5a3,467e,c88d",
-  "296a,045c,5429,8761,6a90,b70e,68da,ec23,a278,01ed,4534,71eb,b381,9dd5,bc3c",
-  "2172,70f6,f26e,abdc,5904,2988,9d1e,0503,51e8,3414,bec6,fbcd,faba,7363,ca89,547d",
-  "0bac,1c83,7487,852a,4231,23cc,9620,afe7,65ed,1d6b,991d,fb63,a4d0,f8fe,b549,5e70",
-  "e5dd,1be1,cda2,923e,73ac,e741,8a09,d78a,6fc9,1480,2703,b460,2854,f5f6,c9f5,b3b6",
-  "0721,8493,6b5b,1fc6,0765,515a,e7fa,384c,64e8,b72a,d4fb,0138,d32a,fd99,c20e,9ced",
-  "0d67,6102,5613,b27a,4742,41db,12e9,9ed5,9a78,e3cf,bfb6,9e8d,080a,3453,fafc,c85c",
-  "351a,bac2,e616,83fc,f077,8996,7a7e,9c1a,563f,b2d0,531e,b84c,54bd,02d9,8e42,04df",
-  "d7f8,75e2,6bca,fd79,16ac,a0b4,8094,a153,972d,bcfe,2e1c,4631,6b00,5d84,e285,33f9",
-  "a11b,76a0,e089,e607,9dfc,d944,4c86,a8c3,45e1,26ad,b25b,f335,7cfd,3b25,e8f1,7092",
-  "7f5a,812f,7273,c81b,3eb0,ced5,3569,13ac,e7da,09d8,f5de,49ba,cb12,66f0,2446,4809",
-  "9c57,34ed,5c83,3f68,01f4,b24b,9761,40dc,e6a2,5308,7a59,ec9b,1a6e,ff2d,28d1,ba70",
-  "65d1,ad56,8c3a,7014,6f45,ab29,8987,992c,031e,34d1,07ef,f6a8,7ce2,fb23,bdeb,c054",
-  "341d,4cf9,f251,d50e,7b5a,e928,4f16,fba6,d7c6,7079,e16a,c49b,d88e,2c23,5a80,3b30",
-  "a04b,765e,629c,067e,bff8,5856,71ad,84aa,302c,fd8c,2d4b,e93d,5930,72ef,911b,34c1",
-  "3513,92a1,a6c4,a9b8,47fe,3b12,2048,60e7,1eef,458b,2f9d,70d5,fa6d,56c8,b70d,cc93",
-  "53e4,5616,d588,9e91,fa10,d026,3fb7,bea9,0ec2,68d5,f9c0,a833,d44c,24a7,f27b,cb17",
-  "d8c7,a10b,786f,2512,567d,f8a2,ccde,df3c,ef03,5b0e,6943,9a63,149b,4850,a427,19eb",
-  "08a3,720c,29c0,2e77,59fb,14eb,8430,41dd,f8aa,6ab9,fce6,155d,9851,62fd,c7e6,433b",
-  "c6c9,ad37,c203,4131,e7bd,60f6,8f0b,0587,a4eb,e2e7,8982,6adb,f251,df95,45a3,c194",
-];
 
 function parseClassic(dataStr){
   const list=dataStr.split(',').map(ts=>{
@@ -459,27 +380,12 @@ function fallbackGen(numColors, emptyTubes){
   return list;
 }
 
-// 经典关卡按管数分组
-const CLASSIC_GROUPS=[
-  {label:'🌿 入门',hint:'4~5 管',range:[0,8]},
-  {label:'🍃 初级',hint:'6~7 管',range:[8,16]},
-  {label:'🌳 中级',hint:'8~9 管',range:[16,28]},
-  {label:'🏔 高级',hint:'10~11 管',range:[28,40]},
-  {label:'🔥 专家',hint:'12~13 管',range:[40,56]},
-  {label:'💀 大师',hint:'14~16 管',range:[56,84]},
-];
-
 function renderChallenge(){
   const grid=document.getElementById('diff-grid');
   let html='<div style="font-size:14px;color:var(--muted);margin:0 0 2px;">随机生成（反向构造·保证有解）</div>';
   html+=DIFFS.map(d=>`
     <button class="diff-btn" data-gen="${d.n}" data-empty="${d.empty}" data-shuffle="${d.shuffle}">
       <span class="name">${d.label}</span><span class="hint">${d.hint}</span>
-    </button>`).join('');
-  html+='<div style="font-size:14px;color:var(--muted);margin:8px 0 2px;">经典关卡（84关）</div>';
-  html+=CLASSIC_GROUPS.map((g,i)=>`
-    <button class="diff-btn" data-classic="${i}">
-      <span class="name">${g.label}</span><span class="hint">${g.hint} · ${g.range[0]+1}–${g.range[1]}关</span>
     </button>`).join('');
   grid.innerHTML=html;
   grid.querySelectorAll('[data-gen]').forEach(b=>{
@@ -493,24 +399,6 @@ function renderChallenge(){
       },50);
     });
   });
-  grid.querySelectorAll('[data-classic]').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const g=CLASSIC_GROUPS[parseInt(b.dataset.classic)];
-      const idx=g.range[0]+Math.floor(Math.random()*(g.range[1]-g.range[0]));
-      playMode='classic';playLevelId=idx;
-      document.getElementById('play-label').textContent='经典 #'+(idx+1);
-      showScreen('play');
-      setTimeout(()=>{
-        try{const data=parseClassic(CLASSIC_DATA[idx]);resetFromData(data);}catch(e){console.error(e);}
-      },50);
-    });
-  });
-}
-function startClassic(idx){
-  playMode='classic';playLevelId=idx;
-  const data=parseClassic(CLASSIC_DATA[idx]);
-  document.getElementById('play-label').textContent='经典 #'+(idx+1)+' ('+data.length+'管)';
-  showScreen('play');resetFromData(data);
 }
 
 // ── 变容模式 ──
@@ -615,10 +503,9 @@ let editActiveColor=0;   // 当前选中的色板索引
 let editBlindMode=false; // 盲盒编辑模式
 
 function initEditor(){
-  const c1=PALETTE[0], c2=PALETTE[1];
   editTubes=[
-    [c1,c1,c1,c1],
-    [c2,c2,c2,c2],
+    ['transparent','transparent','transparent','transparent'],
+    ['transparent','transparent','transparent','transparent'],
     ['transparent','transparent','transparent','transparent'],
   ];
   editCaps=[4,4,4];
@@ -1046,6 +933,13 @@ function checkWin(){
     if(moves<=par*1.1)stars=3;else if(moves<=par*1.7)stars=2;
     const emoji=['','⭐','🌟🌟','🌟🌟🌟'][stars];
     elDetail.innerHTML=`${emoji}<br>${moves} 步完成`;
+    if(playMode==='custom'){
+      document.getElementById('btn-win-ok').textContent='回到编辑';
+      document.getElementById('win-card').querySelector('h1').textContent='测试通过！';
+    }else{
+      document.getElementById('btn-win-ok').textContent='回到菜单';
+      document.getElementById('win-card').querySelector('h1').textContent='恭喜通关！';
+    }
     elOverlay.classList.add('show');
   }
 }
@@ -1380,7 +1274,7 @@ document.addEventListener('keydown',e=>{if(currentScreen!=='play')return;if(e.ct
 // ── 按钮 ──
 document.getElementById('btn-undo').addEventListener('click',undo);
 document.getElementById('btn-reset').addEventListener('click',restartLevel);
-const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special'};
+const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special',custom:'editor'};
 document.getElementById('btn-back-play').addEventListener('click',()=>{exitPlay();showScreen(modeBack[playMode]||'menu');});
 document.getElementById('btn-win-ok').addEventListener('click',()=>{elOverlay.classList.remove('show');showScreen(modeBack[playMode]||'menu');});
 
