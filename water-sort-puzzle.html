@@ -300,6 +300,7 @@ const elDetail=document.getElementById('win-detail');
 let currentScreen='menu';
 let playMode='challenge'; // 'challenge' | 'custom' | 'classic' | 'blindbox' | 'varicap'
 let playLevelId=null;
+let playBack='menu'; // 试玩/我的关卡 胜利后回到的页面
 let tubeCaps=[];       // 每管容量（默认4，变容模式4~7）
 let hiddenMask=[];     // 盲盒模式：hiddenMask[i]=该管当前被隐藏的层数(0~2)
 let hiddenMaskInit=[]; // 盲盒初始状态（重来时恢复）
@@ -674,6 +675,7 @@ function testLevel(){
   }
   playMode='custom';
   playLevelId=null;
+  playBack='editor';
   document.getElementById('play-label').textContent='试玩 · 自制关卡';
   showScreen('play');
   resetFromData(data,hid,caps);
@@ -726,6 +728,7 @@ function playCustomLevel(id){
   if(!l) return;
   playMode='custom';
   playLevelId=id;
+  playBack='mylevels';
   document.getElementById('play-label').textContent=l.name;
   showScreen('play');
   resetFromData(l.tubes.map(t=>[...t]),l.hidden||null,l.caps||null);
@@ -933,9 +936,12 @@ function checkWin(){
     if(moves<=par*1.1)stars=3;else if(moves<=par*1.7)stars=2;
     const emoji=['','⭐','🌟🌟','🌟🌟🌟'][stars];
     elDetail.innerHTML=`${emoji}<br>${moves} 步完成`;
-    if(playMode==='custom'){
+    if(playMode==='custom' && playBack==='editor'){
       document.getElementById('btn-win-ok').textContent='回到编辑';
       document.getElementById('win-card').querySelector('h1').textContent='测试通过！';
+    }else if(playMode==='custom' && playBack==='mylevels'){
+      document.getElementById('btn-win-ok').textContent='回到我的关卡';
+      document.getElementById('win-card').querySelector('h1').textContent='恭喜通关！';
     }else{
       document.getElementById('btn-win-ok').textContent='回到菜单';
       document.getElementById('win-card').querySelector('h1').textContent='恭喜通关！';
@@ -1274,9 +1280,9 @@ document.addEventListener('keydown',e=>{if(currentScreen!=='play')return;if(e.ct
 // ── 按钮 ──
 document.getElementById('btn-undo').addEventListener('click',undo);
 document.getElementById('btn-reset').addEventListener('click',restartLevel);
-const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special',custom:'editor'};
-document.getElementById('btn-back-play').addEventListener('click',()=>{exitPlay();showScreen(modeBack[playMode]||'menu');});
-document.getElementById('btn-win-ok').addEventListener('click',()=>{elOverlay.classList.remove('show');showScreen(modeBack[playMode]||'menu');});
+const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special'};
+document.getElementById('btn-back-play').addEventListener('click',()=>{exitPlay();if(playMode==='custom')showScreen(playBack);else showScreen(modeBack[playMode]||'menu');});
+document.getElementById('btn-win-ok').addEventListener('click',()=>{elOverlay.classList.remove('show');if(playMode==='custom')showScreen(playBack);else showScreen(modeBack[playMode]||'menu');});
 
 window.addEventListener('resize',()=>{if(currentScreen==='play')layout();});
 
