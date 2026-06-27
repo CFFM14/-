@@ -342,9 +342,9 @@ document.querySelectorAll('.back-btn').forEach(b=>{
 const DIFFS=[
   {n:5,empty:2,shuffle:60,label:'⭐ 简单',hint:'5色·2空管'},
   {n:6,empty:2,shuffle:80,label:'⭐⭐ 中等',hint:'6色·2空管'},
-  {n:6,empty:1,shuffle:100,label:'⭐⭐⭐ 困难',hint:'6色·仅1空管'},
-  {n:7,empty:1,shuffle:120,label:'🌟🌟 专家',hint:'7色·仅1空管'},
-  {n:8,empty:1,shuffle:150,label:'💀 地狱',hint:'8色·仅1空管'},
+  {n:7,empty:2,shuffle:120,label:'⭐⭐⭐ 困难',hint:'7色·2空管'},
+  {n:8,empty:2,shuffle:160,label:'🌟🌟 专家',hint:'8色·2空管'},
+  {n:10,empty:2,shuffle:200,label:'💀 地狱',hint:'10色·2空管'},
 ];
 
 function genLevelSmart(numColors, emptyTubes, shuffleMoves, depth=0){
@@ -660,12 +660,12 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
   const _pure=w=>{const f=w[0];for(let i=1;i<w.length;i++)if(w[i]!==f)return false;return true;};
   function key(state){const norm=state.map(t=>t.join(','));const empty=[],pure=[],rest=[];for(const t of norm){const layers=t.split(',');if(layers.every(c=>c==='transparent'))empty.push(t);else if(layers.every(c=>c===layers[0]))pure.push(t);else rest.push(t);}return [...rest.sort(),...pure.sort(),...empty.sort()].join('|');}
   const visited=new Set();
-  function dfs(state,depth,firstMove,parentMove){
+  function dfs(state,depth,firstMove){
     if(depth>maxDepth||(depth%200===0&&performance.now()-startTime>timeoutMs))return'timeout';
     if(state.every(_pure))return true;
     const k=key(state);if(visited.has(k))return false;visited.add(k);
-    const moves=[];
-    let firstEmpty=-1;
+    // 生成所有合法走法
+    const moves=[];let firstEmpty=-1;
     for(let i=0;i<state.length;i++)if(_topClr(state[i])==='transparent'){firstEmpty=i;break;}
     for(let from=0;from<state.length;from++){
       if(_pure(state[from]))continue;
@@ -673,16 +673,20 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
       const srcRun=_topRun(state[from]);
       for(let to=0;to<state.length;to++){
         if(from===to)continue;
-        // 禁止立即反向：不把水倒回刚才倒过来的管子
-        if(parentMove&&from===parentMove.to&&to===parentMove.from)continue;
         const dTop=_topClr(state[to]);if(dTop!=='transparent'&&dTop!==sc)continue;
         const sp=_space(state[to]);if(sp===0)continue;
-        // 空管对称剪枝：多个空管只倒入第一个
         if(dTop==='transparent'&&to!==firstEmpty)continue;
         const cnt=Math.min(srcRun,sp);
+        // 反乒乓剪枝：同色互倒只在「完成目标管」或「清空来源当前色」时才允许
+        if(dTop===sc){
+          const afterSrcRun=srcRun-cnt;
+          const testTo=[...state[to]];let ta=0;for(let i=0;i<testTo.length&&ta<cnt;i++)if(testTo[i]==='transparent'){testTo[i]=sc;ta++;}
+          const completesTo=testTo.every(c=>c===testTo[0]);
+          if(!completesTo&&afterSrcRun>0)continue; // 没完成管也没露出新颜色 → 纯粹排列组合，跳过
+        }
         let score=cnt*10;
-        const afterTo=[...state[to]];let ad=0;for(let i=0;i<afterTo.length&&ad<cnt;i++)if(afterTo[i]==='transparent'){afterTo[i]=sc;ad++;}
-        if(afterTo.every(c=>c===afterTo[0]))score+=100;
+        const afterTo2=[...state[to]];let ad2=0;for(let i=0;i<afterTo2.length&&ad2<cnt;i++)if(afterTo2[i]==='transparent'){afterTo2[i]=sc;ad2++;}
+        if(afterTo2.every(c=>c===afterTo2[0]))score+=100;
         else if(dTop!=='transparent')score+=50;
         moves.push({from,to,cnt,score,sc});
       }
@@ -693,8 +697,7 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
       let rm=0;for(let i=state[from].length-1;i>=0&&rm<cnt;i--)if(state[from][i]===sc){state[from][i]='transparent';rm++;}
       let ad=0;for(let i=0;i<state[to].length&&ad<cnt;i++)if(state[to][i]==='transparent'){state[to][i]=sc;ad++;}
       const move=firstMove!==null?firstMove:{from,to};
-      const curMove={from,to};
-      const r=dfs(state,depth+1,move,curMove);
+      const r=dfs(state,depth+1,move);
       if(r===true)return move;
       if(r&&r!=='timeout'&&typeof r==='object')return r;
       state[from]=savedFrom;state[to]=savedTo;
@@ -702,7 +705,7 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
     return false;
   }
   try{
-    const r=dfs(tubes.map(t=>[...t]),0,null,null);
+    const r=dfs(tubes.map(t=>[...t]),0,null);
     if(r==='timeout')return'timeout';
     return(r&&typeof r==='object')?r:null;
   }catch(e){console.error('findHint error:',e);return null;}
