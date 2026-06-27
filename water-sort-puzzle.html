@@ -821,8 +821,8 @@ let feedback=null;
 let transferAnims=[]; // 支持多动画同时进行
 let cachedSlots=null;
 function isAnimating(i){return transferAnims.some(a=>a.from===i||a.to===i);}
-let hintState=null, hintThinking=false;
-const HINT_DURATION=2000, HINT_FADE=300, HINT_TIMEOUT=4000;
+let hintThinking=false;
+const HINT_TIMEOUT=4000;
 let cw, ch, slots=[];
 
 const topIdx=w=>{for(let i=w.length-1;i>=0;i--)if(w[i]!=='transparent')return i;return-1;};
@@ -836,21 +836,18 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 // genLevel 已替换为 genLevelSmart（反向构造保证有解）
 
-// ── 提示功能 ──
-function clearHint(){if(hintState){hintState=null;syncUI();}}
+// ── 提示功能（自动倒水） ──
 function triggerHint(){
   if(hintThinking||won||transferAnims.length>0)return;
   if(!tubes||tubes.length===0||tubes.every(pure))return;
-  clearHint();hintThinking=true;
+  hintThinking=true;selected=-1;
   const btn=document.getElementById('btn-hint');
   btn.classList.add('thinking');btn.textContent='💭 思考中…';btn.disabled=true;
   setTimeout(()=>{
     const r=findHint(tubes,tubeCaps,hiddenMask,HINT_TIMEOUT);
-    hintThinking=false;btn.classList.remove('thinking');
+    hintThinking=false;btn.classList.remove('thinking');btn.textContent='💡 提示';
     if(r&&typeof r==='object'){
-      btn.textContent='💡 提示';
-      hintState={from:r.from,to:r.to,startTime:performance.now()};
-      setTimeout(()=>{if(hintState){hintState=null;syncUI();}},HINT_DURATION+HINT_FADE);
+      attempt(r.from,r.to);
     }else{
       btn.textContent=r==='timeout'?'⏱ 超时':'❓ 无解';
       setTimeout(()=>{btn.textContent='💡 提示';syncUI();},1500);
@@ -860,7 +857,6 @@ function triggerHint(){
 }
 
 function resetFromData(data, mask=null, caps=null){
-  hintState=null;
   tubesInit=data.map(t=>[...t]);
   tubes=data.map(t=>[...t]);
   capsInit=caps?[...caps]:data.map(t=>t.length);
@@ -890,7 +886,6 @@ function reset(n=colorN){
 }
 
 function restartLevel(){
-  hintState=null;
   tubes=tubesInit.map(t=>[...t]);
   tubeCaps=[...capsInit];
   hiddenMask=[...hiddenMaskInit];
@@ -953,7 +948,6 @@ function isCapped(i){
   return total===tubes[i].length; // 颜色总数 = 管容量
 }
 function tap(idx){
-  clearHint();
   if(won)return;
   if(idx<0){selected=-1;syncUI();return;}
   if(idx>=tubes.length)return;
@@ -1015,7 +1009,6 @@ function attempt(from,to){
 function reject(idx){feedback={tube:idx,kind:'reject',t:performance.now()};}
 
 function undo(){
-  clearHint();
   if(won||undoStack.length===0)return;
   const act=undoStack.pop();
   const{from,to,color,count,oldHiddenFrom}=act;
@@ -1202,33 +1195,6 @@ function render(now){
     drawStand(slots[i].x,slots[i].y,cap);
     drawTube(slots[i].x,slots[i].y,tubes[i],false,null,hiddenMask[i]||0,1,0,cap,i);
     if(isCapped(i))drawCap(slots[i].x,slots[i].y,cap);
-  }
-  // ── 提示光环 ──
-  if(hintState&&!hintThinking){
-    const el=now-hintState.startTime;
-    if(el<HINT_DURATION+HINT_FADE){
-      const pulse=0.5+0.5*Math.sin(el*0.008);
-      let alpha=1;if(el>HINT_DURATION)alpha=Math.max(0,1-(el-HINT_DURATION)/HINT_FADE);
-      // Source tube (click first)
-      [hintState.from,hintState.to].forEach((ti,idx)=>{
-        if(ti<0||ti>=tubes.length)return;
-        const pos=slots[ti];if(!pos)return;
-        const cap=tubeCaps[ti]||4;const th=totalH(cap);
-        const isSrc=idx===0;
-        ctx.save();
-        const color=isSrc?'255,193,7':'76,175,80';
-        ctx.strokeStyle=`rgba(${color},${0.55*alpha})`;
-        ctx.lineWidth=3+pulse*2;
-        ctx.shadowColor=`rgba(${color},${0.7*alpha*pulse})`;
-        ctx.shadowBlur=14+pulse*8;
-        ctx.beginPath();ctx.roundRect(pos.x-6,pos.y-6,TW+12,th+12,10);ctx.stroke();
-        // Number badge
-        ctx.fillStyle=`rgba(${color},${0.9*alpha})`;
-        ctx.font='bold 24px sans-serif';ctx.textAlign='center';
-        ctx.fillText(isSrc?'①':'②',pos.x+TW/2,pos.y-10-pulse*4);
-        ctx.restore();
-      });
-    }else{hintState=null;}
   }
   syncUI();
 }
