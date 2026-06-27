@@ -660,7 +660,7 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
   const _pure=w=>{const f=w[0];for(let i=1;i<w.length;i++)if(w[i]!==f)return false;return true;};
   function key(state){const norm=state.map(t=>t.join(','));const empty=[],pure=[],rest=[];for(const t of norm){const layers=t.split(',');if(layers.every(c=>c==='transparent'))empty.push(t);else if(layers.every(c=>c===layers[0]))pure.push(t);else rest.push(t);}return [...rest.sort(),...pure.sort(),...empty.sort()].join('|');}
   const visited=new Set();
-  function dfs(state,depth,firstMove){
+  function dfs(state,depth,firstMove,parentMove){
     if(depth>maxDepth||(depth%200===0&&performance.now()-startTime>timeoutMs))return'timeout';
     if(state.every(_pure))return true;
     const k=key(state);if(visited.has(k))return false;visited.add(k);
@@ -673,6 +673,8 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
       const srcRun=_topRun(state[from]);
       for(let to=0;to<state.length;to++){
         if(from===to)continue;
+        // 禁止立即反向：不把水倒回刚才倒过来的管子
+        if(parentMove&&from===parentMove.to&&to===parentMove.from)continue;
         const dTop=_topClr(state[to]);if(dTop!=='transparent'&&dTop!==sc)continue;
         const sp=_space(state[to]);if(sp===0)continue;
         // 空管对称剪枝：多个空管只倒入第一个
@@ -691,7 +693,8 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
       let rm=0;for(let i=state[from].length-1;i>=0&&rm<cnt;i--)if(state[from][i]===sc){state[from][i]='transparent';rm++;}
       let ad=0;for(let i=0;i<state[to].length&&ad<cnt;i++)if(state[to][i]==='transparent'){state[to][i]=sc;ad++;}
       const move=firstMove!==null?firstMove:{from,to};
-      const r=dfs(state,depth+1,move);
+      const curMove={from,to};
+      const r=dfs(state,depth+1,move,curMove);
       if(r===true)return move;
       if(r&&r!=='timeout'&&typeof r==='object')return r;
       state[from]=savedFrom;state[to]=savedTo;
@@ -699,7 +702,7 @@ function findHint(tubes,caps,hiddenMask,timeoutMs){
     return false;
   }
   try{
-    const r=dfs(tubes.map(t=>[...t]),0,null);
+    const r=dfs(tubes.map(t=>[...t]),0,null,null);
     if(r==='timeout')return'timeout';
     return(r&&typeof r==='object')?r:null;
   }catch(e){console.error('findHint error:',e);return null;}
