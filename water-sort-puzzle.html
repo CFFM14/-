@@ -132,6 +132,8 @@
     .logo{font-size:36px;}
     .title{font-size:22px;}
   }
+  @keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,168,83,0.4)}50%{box-shadow:0 0 12px 4px rgba(212,168,83,0.15)}}
+  #btn-hint.thinking{animation:hintPulse 1s infinite}
 </style>
 </head>
 <body>
@@ -182,6 +184,7 @@
       <div class="badge">步数 <span id="moves-num">0</span></div>
       <button class="btn" id="btn-undo" disabled>↩ 撤销</button>
       <button class="btn" id="btn-reset">↻ 重来</button>
+      <button class="btn" id="btn-hint" disabled>💡 提示</button>
       <button class="btn" id="btn-add-tube-play">＋ 管子</button>
     </div>
   </div>
@@ -353,7 +356,7 @@ function genLevelSmart(numColors, emptyTubes, shuffleMoves, depth=0){
   }
   for(let e=0;e<emptyTubes;e++)list.push(new Array(4).fill('transparent'));
   let eff=0;
-  const maxTries=shuffleMoves*20; // 充足尝试
+  const maxTries=shuffleMoves*20;
   for(let k=0;k<maxTries&&eff<shuffleMoves;k++){
     let from,to;
     do{from=Math.floor(Math.random()*list.length);to=Math.floor(Math.random()*list.length);}while(from===to);
@@ -367,7 +370,12 @@ function genLevelSmart(numColors, emptyTubes, shuffleMoves, depth=0){
     eff++;
   }
   if(eff<3||list.every(pure))return genLevelSmart(numColors,emptyTubes,shuffleMoves,depth+1);
-  return list.map(w=>[...w]);
+  const result=list.map(w=>[...w]);
+  // 验证可解性，无解则重新生成
+  if(!checkSolvable(result,Math.max(800,numColors*120))){
+    return genLevelSmart(numColors,emptyTubes,shuffleMoves,depth+1);
+  }
+  return result;
 }
 
 // 后备方案：随机洗牌分配（旧方式，速度快但不定有解）
@@ -641,6 +649,70 @@ function checkSolvable(tubes,maxDepth=600){
   return dfs(tubes.map(t=>[...t]),0);
 }
 
+// ── 提示功能（DFS 返回第一步） ──
+function findHint(tubes,caps,hiddenMask,timeoutMs){
+  const startTime=performance.now(); timeoutMs=timeoutMs||HINT_TIMEOUT;
+  const maxDepth=Math.max(2000,tubes.length*120);
+  const _topIdx=w=>{for(let i=w.length-1;i>=0;i--)if(w[i]!=='transparent')return i;return-1;};
+  const _topClr=w=>{const i=_topIdx(w);return i===-1?'transparent':w[i];};
+  const _topRun=w=>{const i=_topIdx(w);if(i===-1)return 0;const c=w[i];let n=0;for(let j=i;j>=0&&w[j]===c;j--)n++;return n;};
+  const _space=w=>{let n=0;for(let i=w.length-1;i>=0&&w[i]==='transparent';i--)n++;return n;};
+  const _pure=w=>{const f=w[0];for(let i=1;i<w.length;i++)if(w[i]!==f)return false;return true;};
+  function key(state){const norm=state.map(t=>t.join(','));const empty=[],pure=[],rest=[];for(const t of norm){const layers=t.split(',');if(layers.every(c=>c==='transparent'))empty.push(t);else if(layers.every(c=>c===layers[0]))pure.push(t);else rest.push(t);}return [...rest.sort(),...pure.sort(),...empty.sort()].join('|');}
+  const visited=new Set();
+  function dfs(state,masks,depth,firstMove){
+    if(depth>maxDepth||(depth%200===0&&performance.now()-startTime>timeoutMs))return'timeout';
+    if(state.every(_pure))return true;
+    const k=key(state);if(visited.has(k))return false;visited.add(k);
+    // 生成所有合法走法并排序+剪枝
+    const moves=[];
+    // 找第一个空管索引用于对称剪枝
+    let firstEmpty=-1;
+    for(let i=0;i<state.length;i++)if(_topClr(state[i])==='transparent'){firstEmpty=i;break;}
+    for(let from=0;from<state.length;from++){
+      if(_pure(state[from]))continue;
+      const sc=_topClr(state[from]);if(sc==='transparent')continue;
+      const srcRun=_topRun(state[from]);
+      // 剪枝：如果来源管只有一种颜色且非空管已空→完成此管毫无意义
+      const onlyOneColor=state[from].every(c=>c===sc||c==='transparent');
+      for(let to=0;to<state.length;to++){
+        if(from===to)continue;
+        const dTop=_topClr(state[to]);if(dTop!=='transparent'&&dTop!==sc)continue;
+        const sp=_space(state[to]);if(sp===0)continue;
+        // 空管对称剪枝：只倒入第一个空管
+        if(dTop==='transparent'&&to!==firstEmpty)continue;
+        // 剪枝：不要将单色管倒入空管（浪费时间）
+        if(onlyOneColor&&dTop==='transparent')continue;
+        const cnt=Math.min(srcRun,sp);
+        let score=cnt*10;
+        const afterTo=[...state[to]];let ad=0;for(let i=0;i<afterTo.length&&ad<cnt;i++)if(afterTo[i]==='transparent'){afterTo[i]=sc;ad++;}
+        if(afterTo.every(c=>c===afterTo[0]))score+=100;
+        else if(dTop!=='transparent')score+=50;
+        moves.push({from,to,cnt,score,sc});
+      }
+    }
+    moves.sort((a,b)=>b.score-a.score);
+    for(const{from,to,cnt,sc}of moves){
+      const savedFrom=[...state[from]],savedTo=[...state[to]],savedMaskFrom=masks[from];
+      let rm=0;for(let i=state[from].length-1;i>=0&&rm<cnt;i--)if(state[from][i]===sc){state[from][i]='transparent';rm++;}
+      let ad=0;for(let i=0;i<state[to].length&&ad<cnt;i++)if(state[to][i]==='transparent'){state[to][i]=sc;ad++;}
+      if(masks[from]>0&&_topClr(state[from])==='transparent')masks[from]=Math.max(0,masks[from]-1);
+      const move=firstMove!==null?firstMove:{from,to};
+      const r=dfs(state,masks,depth+1,move);
+      if(r===true)return move;
+      if(r&&r!=='timeout'&&typeof r==='object')return r;
+      state[from]=savedFrom;state[to]=savedTo;masks[from]=savedMaskFrom;
+    }
+    return false;
+  }
+  const masks=hiddenMask?[...hiddenMask]:new Array(tubes.length).fill(0);
+  try{
+    const r=dfs(tubes.map(t=>[...t]),masks,0,null);
+    if(r==='timeout')return'timeout';
+    return(r&&typeof r==='object')?r:null;
+  }catch(e){console.error('findHint error:',e);return null;}
+}
+
 function saveLevel(){
   const name=document.getElementById('editor-name').value.trim()||'未命名关卡';
   const colorsUsed=new Set();
@@ -754,6 +826,8 @@ let feedback=null;
 let transferAnims=[]; // 支持多动画同时进行
 let cachedSlots=null;
 function isAnimating(i){return transferAnims.some(a=>a.from===i||a.to===i);}
+let hintState=null, hintThinking=false;
+const HINT_DURATION=2000, HINT_FADE=300, HINT_TIMEOUT=4000;
 let cw, ch, slots=[];
 
 const topIdx=w=>{for(let i=w.length-1;i>=0;i--)if(w[i]!=='transparent')return i;return-1;};
@@ -767,7 +841,31 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 // genLevel 已替换为 genLevelSmart（反向构造保证有解）
 
+// ── 提示功能 ──
+function clearHint(){if(hintState){hintState=null;syncUI();}}
+function triggerHint(){
+  if(hintThinking||won||transferAnims.length>0)return;
+  if(!tubes||tubes.length===0||tubes.every(pure))return;
+  clearHint();hintThinking=true;
+  const btn=document.getElementById('btn-hint');
+  btn.classList.add('thinking');btn.textContent='💭 思考中…';btn.disabled=true;
+  setTimeout(()=>{
+    const r=findHint(tubes,tubeCaps,hiddenMask,HINT_TIMEOUT);
+    hintThinking=false;btn.classList.remove('thinking');
+    if(r&&typeof r==='object'){
+      btn.textContent='💡 提示';
+      hintState={from:r.from,to:r.to,startTime:performance.now()};
+      setTimeout(()=>{if(hintState){hintState=null;syncUI();}},HINT_DURATION+HINT_FADE);
+    }else{
+      btn.textContent=r==='timeout'?'⏱ 超时':'❓ 无解';
+      setTimeout(()=>{btn.textContent='💡 提示';syncUI();},1500);
+    }
+    syncUI();
+  },30);
+}
+
 function resetFromData(data, mask=null, caps=null){
+  hintState=null;
   tubesInit=data.map(t=>[...t]);
   tubes=data.map(t=>[...t]);
   capsInit=caps?[...caps]:data.map(t=>t.length);
@@ -797,6 +895,7 @@ function reset(n=colorN){
 }
 
 function restartLevel(){
+  hintState=null;
   tubes=tubesInit.map(t=>[...t]);
   tubeCaps=[...capsInit];
   hiddenMask=[...hiddenMaskInit];
@@ -859,6 +958,7 @@ function isCapped(i){
   return total===tubes[i].length; // 颜色总数 = 管容量
 }
 function tap(idx){
+  clearHint();
   if(won)return;
   if(idx<0){selected=-1;syncUI();return;}
   if(idx>=tubes.length)return;
@@ -920,6 +1020,7 @@ function attempt(from,to){
 function reject(idx){feedback={tube:idx,kind:'reject',t:performance.now()};}
 
 function undo(){
+  clearHint();
   if(won||undoStack.length===0)return;
   const act=undoStack.pop();
   const{from,to,color,count,oldHiddenFrom}=act;
@@ -950,7 +1051,7 @@ function checkWin(){
   }
 }
 
-function syncUI(){elMoves.textContent=moves;elUndo.disabled=(undoStack.length===0||won);}
+function syncUI(){elMoves.textContent=moves;elUndo.disabled=(undoStack.length===0||won);const hb=document.getElementById('btn-hint');if(hb)hb.disabled=(won||transferAnims.length>0||hintThinking||!tubes||tubes.length===0||tubes.every(pure));}
 
 // ── 渲染 ──
 function lighten(hex,a){const n=parseInt(hex.slice(1),16);return`rgb(${Math.min(255,(n>>16)+a)},${Math.min(255,(n>>8&255)+a)},${Math.min(255,(n&255)+a)})`;}
@@ -1106,6 +1207,33 @@ function render(now){
     drawStand(slots[i].x,slots[i].y,cap);
     drawTube(slots[i].x,slots[i].y,tubes[i],false,null,hiddenMask[i]||0,1,0,cap,i);
     if(isCapped(i))drawCap(slots[i].x,slots[i].y,cap);
+  }
+  // ── 提示光环 ──
+  if(hintState&&!hintThinking){
+    const el=now-hintState.startTime;
+    if(el<HINT_DURATION+HINT_FADE){
+      const pulse=0.5+0.5*Math.sin(el*0.008);
+      let alpha=1;if(el>HINT_DURATION)alpha=Math.max(0,1-(el-HINT_DURATION)/HINT_FADE);
+      // Source tube (click first)
+      [hintState.from,hintState.to].forEach((ti,idx)=>{
+        if(ti<0||ti>=tubes.length)return;
+        const pos=slots[ti];if(!pos)return;
+        const cap=tubeCaps[ti]||4;const th=totalH(cap);
+        const isSrc=idx===0;
+        ctx.save();
+        const color=isSrc?'255,193,7':'76,175,80';
+        ctx.strokeStyle=`rgba(${color},${0.55*alpha})`;
+        ctx.lineWidth=3+pulse*2;
+        ctx.shadowColor=`rgba(${color},${0.7*alpha*pulse})`;
+        ctx.shadowBlur=14+pulse*8;
+        ctx.beginPath();ctx.roundRect(pos.x-6,pos.y-6,TW+12,th+12,10);ctx.stroke();
+        // Number badge
+        ctx.fillStyle=`rgba(${color},${0.9*alpha})`;
+        ctx.font='bold 24px sans-serif';ctx.textAlign='center';
+        ctx.fillText(isSrc?'①':'②',pos.x+TW/2,pos.y-10-pulse*4);
+        ctx.restore();
+      });
+    }else{hintState=null;}
   }
   syncUI();
 }
@@ -1275,11 +1403,12 @@ canvas.addEventListener('pointerup',e=>{
   syncUI();
 });
 canvas.addEventListener('pointerleave',()=>{dragState=null;syncUI();});
-document.addEventListener('keydown',e=>{if(currentScreen!=='play')return;if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}if(e.key==='r'&&!e.ctrlKey&&!e.metaKey)restartLevel();});
+document.addEventListener('keydown',e=>{if(currentScreen!=='play')return;if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}if(e.key==='r'&&!e.ctrlKey&&!e.metaKey)restartLevel();if(e.key==='h'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();triggerHint();}});
 
 // ── 按钮 ──
 document.getElementById('btn-undo').addEventListener('click',undo);
 document.getElementById('btn-reset').addEventListener('click',restartLevel);
+document.getElementById('btn-hint').addEventListener('click',triggerHint);
 const modeBack={challenge:'challenge',classic:'challenge',blindbox:'special',varicap:'special'};
 document.getElementById('btn-back-play').addEventListener('click',()=>{exitPlay();if(playMode==='custom')showScreen(playBack);else showScreen(modeBack[playMode]||'menu');});
 document.getElementById('btn-win-ok').addEventListener('click',()=>{elOverlay.classList.remove('show');if(playMode==='custom')showScreen(playBack);else showScreen(modeBack[playMode]||'menu');});
