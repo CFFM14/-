@@ -1,1 +1,1 @@
-{"description":"倒水游戏","compileType":"miniprogram","libVersion":"2.32.3","appid":"wx3936033cb2a4d83a","projectname":"water-sort","setting":{"urlCheck":false,"es6":true,"enhance":true,"postcss":true,"minified":true},"condition":{"miniprogram":{"list":[{"name":"首页","pathName":"pages/index/index","query":"","launchMode":"default","scene":null}]}}}
+{"description":"倒水游戏","compileType":"game","libVersion":"3.15.2","appid":"wx3936033cb2a4d83a","projectname":"water-sort","setting":{"urlCheck":true,"es6":true,"enhance":true,"postcss":true,"minified":true}}

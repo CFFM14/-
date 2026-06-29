@@ -1,8 +1,8 @@
 {
   "libVersion": "2.32.3",
-  "projectname": "%E5%80%92%E6%B0%B4%E8%87%AA%E5%88%B6",
+  "projectname": "wx-game",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,
@@ -13,9 +13,10 @@
     "useStaticServer": false,
     "useLanDebug": false,
     "showES6CompileOption": false,
-    "compileHotReLoad": false,
+    "compileHotReLoad": true,
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true,
     "bigPackageSizeSupport": false
-  }
+  },
+  "condition": {}
 }
