@@ -17,9 +17,8 @@ function straightH(c){return c*LAYER_H-10;}
 function totalH(c){return RIM_H+straightH(c)+BOTTOM_R;}
 var PALETTE=['#F4A7A0','#A8D8C8','#A0C4F4','#F4E4A0','#C8B8E8','#F4C8A0','#5BC0BE','#E8B8C8','#B8C8E0','#D8C8B0','#FF7B7B','#7BC67E','#8B7CB8','#6B8FA0','#D4956B','#6B6B6B'];
 
-// ── Canvas 兼容 ──
-function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
-if(!ctx.roundRect)ctx.roundRect=function(x,y,w,h,r){roundRect(x,y,w,h,r);};
+// ── Canvas 圆角矩形 ──
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
 
 // ── 工具 ──
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -169,7 +168,7 @@ function layout(){cw=sw;ch=sh;if(screen!=='game'){slots=[];return;}if(!tubes||tu
 function drawBg(){ctx.fillStyle='#f7f5f0';ctx.fillRect(0,0,cw,ch);}
 
 function drawStand(x,y,cap){var cx=x+TW/2,boY=y+RIM_H+straightH(cap)+BOTTOM_R;ctx.fillStyle='#e8e4dc';ctx.beginPath();ctx.ellipse(cx,boY+1,TW/2+1,3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dcd7ce';ctx.beginPath();ctx.ellipse(cx,boY-1,TW/2-1,2,0,0,Math.PI*2);ctx.fill();}
-function drawCap(x,y,cap){var cx=x+TW/2,topY=y+RIM_H;ctx.fillStyle='#d5c4a1';ctx.strokeStyle='#b8a888';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-3,topY-10,TW+6,12,5);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.roundRect(x,topY-8,TW,3,2);ctx.fill();ctx.fillStyle='rgba(0,0,0,0.10)';ctx.beginPath();ctx.roundRect(x-1,topY-1,TW+2,4,2);ctx.fill();}
+function drawCap(x,y,cap){var cx=x+TW/2,topY=y+RIM_H;ctx.fillStyle='#d5c4a1';ctx.strokeStyle='#b8a888';ctx.lineWidth=1.5;rr(x-3,topY-10,TW+6,12,5);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.35)';rr(x,topY-8,TW,3,2);ctx.fill();ctx.fillStyle='rgba(0,0,0,0.10)';rr(x-1,topY-1,TW+2,4,2);ctx.fill();}
 
 function drawTube(x,y,water,sel,fbKind,hidden,rv,rvPrev,cap,tubeIdx){cap=cap||4;var sh=straightH(cap),th=totalH(cap);var cx=x+TW/2,bodyTop=y+RIM_H,sBot=bodyTop+sh;var innerX=x+WALL,innerTopY=bodyTop+WALL;ctx.save();if(sel){var glow=ctx.createRadialGradient(cx,y+th/2,TW*0.3,cx,y+th/2,TW*1.5);glow.addColorStop(0,'rgba(200,170,110,0.22)');glow.addColorStop(1,'rgba(200,170,110,0)');ctx.fillStyle=glow;ctx.fillRect(x-24,y-8,TW+48,th+20);}
 var tp=function(){ctx.beginPath();ctx.moveTo(x,bodyTop);ctx.lineTo(x,sBot);ctx.arc(cx,sBot,BOTTOM_R,Math.PI,0,true);ctx.lineTo(x+TW,bodyTop);ctx.closePath();};tp();ctx.fillStyle='rgba(248,246,243,0.55)';ctx.fill();tp();ctx.strokeStyle='rgba(175,170,162,0.50)';ctx.lineWidth=1.8;ctx.stroke();
@@ -210,7 +209,7 @@ function render(nowTs){
 //  Canvas UI（替代 HTML）
 // ══════════════════════════════════════
 function drawBtn2(x,y,w,h,txt,disabled,color){
-  ctx.fillStyle=color||'#fff';ctx.strokeStyle=disabled?'#ddd':'#e2ded8';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x,y,w,h,22);ctx.fill();ctx.stroke();
+  ctx.fillStyle=color||'#fff';ctx.strokeStyle=disabled?'#ddd':'#e2ded8';ctx.lineWidth=1.5;rr(x,y,w,h,22);ctx.fill();ctx.stroke();
   ctx.fillStyle=disabled?'#ccc':'#3b3b3b';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,x+w/2,y+h/2);
 }
 
@@ -267,7 +266,7 @@ function drawUI(){
     ctx.fillStyle='#3b3b3b';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('我的关卡',sw/2,30);
     var lvs=loadLevels();if(lvs.length===0){ctx.font='15px sans-serif';ctx.fillStyle='#999';ctx.textAlign='center';ctx.fillText('还没有自制关卡',sw/2,sh/2);}else{
       var pageSize=8,start=myLevelsPage*pageSize,end=Math.min(start+pageSize,lvs.length);
-      for(var i=start;i<end;i++){var lv=lvs[i];var ly2=70+(i-start)*50;ctx.fillStyle='#fff';ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(20,ly2,sw-40,42,10);ctx.fill();ctx.stroke();ctx.fillStyle='#333';ctx.font='14px sans-serif';ctx.textAlign='left';ctx.fillText(lv.name||'关卡',30,ly2+18);ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.fillText((lv.colorCount||0)+'色 · '+(lv.tubes?lv.tubes.length:0)+'管',30,ly2+34);drawBtn2(sw-70,ly2+6,50,28,'▶');btnRects.push({id:'playlv_'+i,x:sw-70,y:ly2+6,w:50,h:28,li:i});}
+      for(var i=start;i<end;i++){var lv=lvs[i];var ly2=70+(i-start)*50;ctx.fillStyle='#fff';ctx.strokeStyle='#ddd';ctx.lineWidth=1;rr(20,ly2,sw-40,42,10);ctx.fill();ctx.stroke();ctx.fillStyle='#333';ctx.font='14px sans-serif';ctx.textAlign='left';ctx.fillText(lv.name||'关卡',30,ly2+18);ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.fillText((lv.colorCount||0)+'色 · '+(lv.tubes?lv.tubes.length:0)+'管',30,ly2+34);drawBtn2(sw-70,ly2+6,50,28,'▶');btnRects.push({id:'playlv_'+i,x:sw-70,y:ly2+6,w:50,h:28,li:i});}
     }
     drawBtn2(10,6,60,30,'← 返回');btnRects.push({id:'back',x:10,y:6,w:60,h:30});
   }else if(screen==='help'){
