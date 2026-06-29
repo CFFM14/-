@@ -972,10 +972,10 @@ function tap(idx){
 function addTubeDuringPlay(){
   if(won||transferAnims.length>0)return;
   const idx=tubes.length;
-  tubes.push(new Array(4).fill('transparent'));
-  tubeCaps.push(4);
+  const cap=playMode==='varicap'?1:4;
+  tubes.push(new Array(cap).fill('transparent'));
+  tubeCaps.push(cap);
   hiddenMask.push(0);
-  // 在画布中找空地放置，不动已有管子
   const free=findFreeSpot(idx,40+Math.random()*(cw-TW-40),40+Math.random()*200);
   slots.push({x:free.x,y:free.y});
   selected=-1;
