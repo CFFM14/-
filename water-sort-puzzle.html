@@ -271,7 +271,7 @@
 // ────────── 常量 ──────────
 const TW=56, RIM_H=10, GAP=20, BOTTOM_R=TW/2, WALL=4;
 const IW=TW-WALL*2, LAYER_H=36, INNER_R=BOTTOM_R-WALL, FB_DURATION=380;
-function straightH(cap){return cap*LAYER_H+6;} // cap=4→150, 5→186, 6→222, 7→258
+function straightH(cap){return cap*LAYER_H+2;} // 顶部留空仅2px
 function totalH(cap){return RIM_H+straightH(cap)+BOTTOM_R;}
 
 const PALETTE=[
